@@ -48,34 +48,40 @@ class DecoderBlock(nn.Module):
     def forward(self, x, skip):
         x = self.up(x)
         if x.shape[2:] != skip.shape[2:]:
+            print(f"Resizing: {x.shape[2:]} to {skip.shape[2:]}")
             x = TF.resize(x, size=skip.shape[2:])
         x = torch.cat((skip, x), dim=1)
         return self.conv(x)
 
 class MyUNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512], n_convs=2, dropout=0.0):
+    def __init__(self, in_channels=3, out_channels=1, num_filters=[32, 64, 128, 256], n_convs=2, dropout=0.0):
         super().__init__()
         self.encoders = nn.ModuleList()
         self.decoders = nn.ModuleList()
 
         # --- Encoder blocks
-        channels = in_channels
-        for feature in features:
-            self.encoders.append(EncoderBlock(channels, feature, n_convs=n_convs, dropout=dropout))
-            channels = feature
+        input_channels = in_channels
+        for filters in num_filters:
+            self.encoders.append(EncoderBlock(input_channels, filters, n_convs=n_convs, dropout=dropout))
+            input_channels = filters
 
         # --- Bottleneck
-        self.bottleneck = ConvBlock(features[-1], features[-1]*2, n_convs=n_convs, dropout=dropout)
+        self.bottleneck = ConvBlock(num_filters[-1], num_filters[-1]*2, n_convs=n_convs, dropout=dropout)
         # --- Decoder blocks (reverse)
-        rev_features = features[::-1]
-        channels = features[-1]*2
-        for feature in rev_features:
-            self.decoders.append(DecoderBlock(channels, feature, n_convs=n_convs, dropout=dropout))
-            channels = feature
+        rev_num_filters = num_filters[::-1]
+        input_channels = num_filters[-1]*2
+        for filters in rev_num_filters:
+            self.decoders.append(DecoderBlock(input_channels, filters, n_convs=n_convs, dropout=dropout))
+            input_channels = filters
 
-        self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
+        self.final_conv = nn.Conv2d(num_filters[0], out_channels, kernel_size=1)
 
     def forward(self, x):
+        h, w = x.shape[2:]
+        div = 2 ** len(self.encoders)
+        if h % div != 0 or w % div != 0:
+            raise ValueError(f"Input size ({h}, {w}) must be divisible by {div}")
+
         skips = []
         for encoder in self.encoders:
             x, skip = encoder(x)
@@ -88,3 +94,19 @@ class MyUNet(nn.Module):
             x = decoder(x, skips[idx])
 
         return self.final_conv(x)
+
+if __name__ == "__main__":
+    import torchsummary
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = MyUNet(in_channels=3, out_channels=1, num_filters=[32, 64, 128, 256], n_convs=2, dropout=0.0).to(device)
+    print(model)
+
+    # Print the model summary
+    torchsummary.summary(model, (3, 256, 256))  # Input shape: (channels, height, width)
+
+    # Test the model with a random input
+    x = torch.randn(1, 3, 256, 256).to(device)  # Batch size of 1, 3 channels, 256x256 image
+    output = model(x)
+    print("Output shape:", output.shape)  # Should be (1, 1, 256, 256) for a segmentation task

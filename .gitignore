@@ -173,8 +173,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-Dataset/
-Models/
+car_pictures/
+Datasets/
+# Models/
+# Results/
 
 # VS Code
 .vscode/

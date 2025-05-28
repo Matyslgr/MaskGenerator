@@ -6,145 +6,84 @@
 ##
 
 import os
-import torch
 import argparse
-import numpy as np
-from torchmetrics.segmentation import DiceScore
-from torchmetrics.classification import BinaryJaccardIndex
-from tqdm import tqdm
-from torch.utils.data import DataLoader
-from sklearn.model_selection import KFold
-from utils import set_deterministic_behavior, get_all_pairs_path
-from dataset import ImageMaskDataset
+from utils import set_deterministic_behavior, get_all_train_pairs_path, get_all_test_pairs_path
 from model import MyUNet
-from earlystopping import EarlyStopping
-
-# Set the device
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {DEVICE}")
-
-def train_model(fold, model, train_loader, val_loader, optimizer, criterion, scheduler, early_stopping, num_epochs, verbose):
-
-    for epoch in tqdm(range(num_epochs), desc=f"Training Fold {fold}", unit="epoch"):
-
-        model.train()
-        train_loss = 0.0
-        for inputs, labels in train_loader:
-            optimizer.zero_grad()
-            y_pred = model(inputs)
-
-            loss = criterion(y_pred, labels)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-
-        model.eval()
-        val_loss = 0.0
-        with torch.no_grad():
-            for inputs, labels in val_loader:
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-
-        val_loss /= len(val_loader)
-
-        scheduler.step()
-        early_stopping(val_loss, model)
-        if early_stopping.early_stop:
-            break
-
-    model = early_stopping.load_best_model(model)
-    return model
-
-def evaluate_model(model: MyUNet, test_loader: DataLoader, dice_metric: DiceScore, iou_metric: BinaryJaccardIndex, verbose: bool):
-    model.eval()
-
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
-
-            outputs = model(inputs)
-            outputs = torch.sigmoid(outputs)
-            outputs = (outputs > 0.5).float()
-
-            # Calculate metrics
-            dice_metric.update(outputs, labels)
-            iou_metric.update(outputs, labels)
-
-    dice_score = dice_metric.compute()
-    iou_score = iou_metric.compute()
-
-    print(f"Dice Score: {dice_score:.4f}")
-    print(f"IOU Score: {iou_score:.4f}")
-    return dice_score, iou_score
+from config import TRAIN_DATASETS_DIR, TEST_DATASET_DIR
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
-    parser.add_argument('--model_path', type=str, required=True, help='The path to save the model')
-    parser.add_argument('--dataset_root', type=str, default="Dataset", help='The root directory of the dataset')
-    parser.add_argument('--batch_size', type=int, default=16, help='The batch size for training')
-    parser.add_argument('--num_epochs', type=int, default=100, help='The number of epochs for training')
-    parser.add_argument('--num_seeds', type=int, default=10, help='The number of seeds to use for training')
-    parser.add_argument('--lr', type=float, default=0.001, help='The learning rate for the optimizer')
-    parser.add_argument('--step_size', type=int, default=10, help='The step size for the learning rate scheduler')
-    parser.add_argument('--gamma', type=float, default=0.1, help='The gamma value for the learning rate scheduler')
-    parser.add_argument('--patience', type=int, default=30, help='The patience value for early stopping')
-    parser.add_argument('--delta', type=float, default=0.0, help='The delta value for early stopping')
-    parser.add_argument('--verbose', type=int, default=0, help='The verbosity level for training')
+
+    # Group for model-related parameters
+    model_group = parser.add_argument_group('Model Parameters')
+    model_group.add_argument('--n_convs', type=int, default=2, help='The number of convolutional layers for each block in the UNet model')
+    model_group.add_argument('--num_filters', type=int, nargs='+', default=[32, 64, 128, 256], help='The number of filters for each encoder block in the UNet model')
+    model_group.add_argument('--dropout', type=float, default=0.0, help='The dropout rate for the model')
+
+    # Group for training-related parameters
+    training_group = parser.add_argument_group('Training Parameters')
+    training_group.add_argument('--dataset_version', type=str, required=True, help='The version of the dataset to use for training')
+    training_group.add_argument('--seed', type=int, default=42, help='The seed for random number generation')
+    training_group.add_argument('--batch_size', type=int, default=16, help='The batch size for training')
+    training_group.add_argument('--num_epochs', type=int, default=100, help='The number of epochs for training')
+    training_group.add_argument('--lr', type=float, default=0.001, help='The learning rate for the optimizer')
+    training_group.add_argument('--step_size', type=int, default=10, help='The step size for the learning rate scheduler')
+    training_group.add_argument('--gamma', type=float, default=0.1, help='The gamma value for the learning rate scheduler')
+    training_group.add_argument('--patience', type=int, default=30, help='The patience value for early stopping')
+    training_group.add_argument('--delta', type=float, default=0.0, help='The delta value for early stopping')
+    training_group.add_argument('--train_image_size', type=int, nargs=2, default=[256, 256], help='The size of the training images (height, width)')
+    training_group.add_argument('--augmentations', type=str, nargs='+', default=[], help='The list of augmentations names to apply to the training images')
+
+    # Group for other parameters (non-model-related)
+    other_group = parser.add_argument_group('Other Parameters')
+    other_group.add_argument('--mode', type=str, choices=['crossval', 'fulltrain'], default='crossval', help='The mode of training (cross-validation or full training)')
+    other_group.add_argument('--hash', type=str, required=True, help='The hash of the model to train')
+    other_group.add_argument('--model_name_template', type=str, required=True, help='The template for the model name')
+    other_group.add_argument('--verbose', action='store_true', help='Whether to print verbose output')
+    other_group.add_argument('--experiment_name', type=str, required=True, help='The name of the experiment')
+
     return parser.parse_args()
+
+def create_model(args):
+    return MyUNet(
+        in_channels=3,
+        out_channels=1,
+        num_filters=args.num_filters,
+        n_convs=args.n_convs,
+        dropout=args.dropout
+    )
 
 def main():
     args = parse_args()
 
-    seeds = [42 + i for i in range(args.num_seeds)]
+    # Set the random seed for reproducibility
+    set_deterministic_behavior(args.seed)
 
-    pairs_path = get_all_pairs_path(args.dataset_root)
+    train_dataset_dir = os.path.join(TRAIN_DATASETS_DIR, args.dataset_version).replace("\\", "/")
 
-    pairs_path = pairs_path[:100]  # Limit to 100 pairs for testing
+    if not os.path.exists(train_dataset_dir):
+        raise FileNotFoundError(f"Train Dataset directory {train_dataset_dir} does not exist.")
 
-    print(f"Total number of pairs: {len(pairs_path)}")
-    dice_metric = DiceScore(num_classes=1, average='macro').to(DEVICE)
-    iou_metric = BinaryJaccardIndex().to(DEVICE)
+    train_pairs_path = get_all_train_pairs_path(train_dataset_dir)
 
-    for seed in seeds:
-        set_deterministic_behavior(seed)
+    # pairs_path = pairs_path[:100]  # Limit to 100 pairs for testing
 
-        kf = KFold(n_splits=5, shuffle=True, random_state=seed)
-        for fold, (train_index, test_index) in enumerate(kf.split(pairs_path)):
-            train_pairs = pairs_path[train_index]
-            test_pairs = pairs_path[test_index]
+    print(f"[INFO] Successfully loaded {len(train_pairs_path)} train pairs of images and masks.")
 
-            val_size = int(len(train_pairs) * 0.2)
-            val_pairs = train_pairs[:val_size]
-            train_pairs = train_pairs[val_size:]
+    test_pairs_path = get_all_test_pairs_path(TEST_DATASET_DIR)
 
-            train_dataset = ImageMaskDataset(train_pairs)
-            val_dataset = ImageMaskDataset(val_pairs)
-            test_dataset = ImageMaskDataset(test_pairs)
+    print(f"[INFO] Successfully loaded {len(test_pairs_path)} test pairs of images and masks.")
 
-            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-            val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
-
-            model = MyUNet(in_channels=3, out_channels=1).to(DEVICE)
-
-            criterion = torch.nn.BCEWithLogitsLoss()
-
-            optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma)
-
-            early_stopping = EarlyStopping(model_path=args.model_path, patience=args.patience, delta=args.delta, verbose=args.verbose)
-
-            model = train_model(fold, model, train_loader, val_loader, optimizer, criterion, scheduler, early_stopping, args.num_epochs, args.verbose)
-
-            dice_score, iou_score = evaluate_model(model, test_loader, dice_metric, iou_metric, args.verbose)
-
-            print(f"Fold {fold} - Seed {seed} - Dice Score: {dice_score:.4f} - IOU Score: {iou_score:.4f}")
-
-            # Reset metrics for the next fold
-            dice_metric.reset()
-            iou_metric.reset()
-
+    if args.mode == "crossval":
+        from crossval_trainer import CrossvalTrainer
+        trainer = CrossvalTrainer(args, create_model)
+        trainer.train(train_pairs_path, test_pairs_path)
+    elif args.mode == "fulltrain":
+        from full_trainer import FullTrainer
+        trainer = FullTrainer(args, create_model)
+        trainer.train(train_pairs_path, test_pairs_path)
+    else:
+        raise ValueError(f"Invalid mode: {args.mode}. Choose 'crossval' or 'fulltrain'.")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,2 @@
+hash,fold,dice_score,iou_score,elapsed_time,dataset_version,model_path,seed,augmentations,batch_size,delta,dropout,gamma,lr,n_convs,num_epochs,num_filters,patience,step_size,train_image_size
+0d5f16cf38,1,0.9955633282661438,0.9898130893707275,01:33:24,v0,Models/crossval/0d5f16cf38/model_0d5f16cf38_s42_fold1.pth,42,"['geometry', 'dropout', 'color_invariance', 'color_variation', 'blur', 'noise', 'weather']",32,0.0,0.0,0.1,0.001,2,100,"[32, 64, 128, 256]",30,10,"[256, 256]"
