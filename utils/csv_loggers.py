@@ -11,7 +11,7 @@ import csv
 class BaseCSVLogger:
     def __init__(self, excluded_keys=None):
         self.excluded_keys = excluded_keys or [
-            "verbose", "mode", "model_name_template"
+            "verbose", "mode", "model_name_template", "experiment_name"
         ]
         self.base_fields = self.define_base_fields()
 
@@ -46,12 +46,12 @@ class CrossvalCSVLogger(BaseCSVLogger):
     def define_base_fields(self):
         return [
             "hash", "fold", "dice_score", "iou_score", "elapsed_time",
-            "dataset_version", "model_path", "seed"
+            "dataset_version", "model_path", "seed", "augmentations"
         ]
 
 class FulltrainCSVLogger(BaseCSVLogger):
     def define_base_fields(self):
         return [
             "hash", "dataset_version", "dice_score", "iou_score",
-            "elapsed_time", "model_path", "seed"
+            "elapsed_time", "model_path", "seed", "augmentations"
         ]

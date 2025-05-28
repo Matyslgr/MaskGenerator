@@ -48,6 +48,7 @@ class DecoderBlock(nn.Module):
     def forward(self, x, skip):
         x = self.up(x)
         if x.shape[2:] != skip.shape[2:]:
+            print(f"Resizing: {x.shape[2:]} to {skip.shape[2:]}")
             x = TF.resize(x, size=skip.shape[2:])
         x = torch.cat((skip, x), dim=1)
         return self.conv(x)
@@ -76,6 +77,11 @@ class MyUNet(nn.Module):
         self.final_conv = nn.Conv2d(num_filters[0], out_channels, kernel_size=1)
 
     def forward(self, x):
+        h, w = x.shape[2:]
+        div = 2 ** len(self.encoders)
+        if h % div != 0 or w % div != 0:
+            raise ValueError(f"Input size ({h}, {w}) must be divisible by {div}")
+
         skips = []
         for encoder in self.encoders:
             x, skip = encoder(x)
@@ -91,7 +97,7 @@ class MyUNet(nn.Module):
 
 if __name__ == "__main__":
     import torchsummary
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = MyUNet(in_channels=3, out_channels=1, num_filters=[32, 64, 128, 256], n_convs=2, dropout=0.0).to(device)

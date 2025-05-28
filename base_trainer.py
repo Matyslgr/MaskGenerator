@@ -8,8 +8,7 @@
 import torch
 from torchmetrics.segmentation import DiceScore
 from torchmetrics.classification import BinaryJaccardIndex
-from model import MyUNet
-
+from transform_manager import TransformManager
 class BaseTrainer:
     def __init__(self, args: dict, model_fn):
         self.args = args
@@ -20,6 +19,8 @@ class BaseTrainer:
 
         self.dice_metric = DiceScore(num_classes=2).to(self.device)
         self.iou_metric = BinaryJaccardIndex(threshold=0.5).to(self.device)
+
+        self.transform_manager = TransformManager(seed=args.seed, num_encoders=len(args.num_filters))
 
     def create_model(self, args: dict):
         return self.model_fn(args).to(self.device)

@@ -60,7 +60,7 @@ def run_training(model_args: dict, training_args: dict, other_args: dict) -> Non
         else:
             command.append(f"--{arg}")
 
-        if isinstance(value, list):
+        if isinstance(value, list) or isinstance(value, tuple):
             for v in value:
                 command.append(str(v))
         else:
@@ -71,8 +71,8 @@ def run_training(model_args: dict, training_args: dict, other_args: dict) -> Non
     return hash
 
 # Model arguments
-n_convss = [2, 3]
-num_filterss = [[8, 16], [16, 32]]
+n_convss = [2]
+num_filterss = [[32, 64, 128, 256]]
 DROPOUT = 0.0
 
 # Training arguments
@@ -85,54 +85,64 @@ STEP_SIZE = 10
 GAMMA = 0.1
 PATIENCE = 30
 DELTA = 0.0
+TRAIN_IMAGE_SIZE = (256, 256)
+# TEST_IMAGE_SIZE = (1080, 1920)
+# List of augmentations to apply
+# "geometry", "dropout", "color_invariance", "color_variation", "blur", "noise", "weather"
+augmentationss = [["geometry", "dropout", "color_invariance", "color_variation", "blur", "noise", "weather"]]
 
 # Other arguments
-# MODE = "fulltrain"
-MODE = "crossval"
+MODE = "fulltrain"
+# MODE = "crossval"
 VERBOSE = False
+EXPERIMENT_NAME = "data_augmentation"
 
 for seed in seeds:
     for num_filters in num_filterss:
         for n_convs in n_convss:
+            for augmentations in augmentationss:
+                print(f"{YELLOW}Augmentations: {augmentations}{RESET}")
 
-            model_args = {
-                "n_convs": n_convs,
-                "num_filters": num_filters,
-                "dropout": DROPOUT,
-            }
-    
-            training_args = {
-                "dataset_version": DATASET_VERSION,
-                "seed": seed + 42,
-                "batch_size": BATCH_SIZE,
-                "num_epochs": NUM_EPOCHS,
-                "lr": LR,
-                "step_size": STEP_SIZE,
-                "gamma": GAMMA,
-                "patience": PATIENCE,
-                "delta": DELTA,
-            }
-    
-            other_args = {
-                "mode": MODE,
-                "verbose": VERBOSE,
-            }
-    
-            # Create the name of the model
-            if MODE == "crossval":
-                model_name_template = "model_{hash}_s{seed}_fold{fold}.pth"
-            elif MODE == "fulltrain":
-                model_name_template = "model_{hash}.pth"
-            else:
-                raise ValueError(f"Unknown mode: {MODE}")
-            other_args["model_name_template"] = model_name_template
-    
-            start = time.time()
-            hash = run_training(model_args, training_args, other_args)
-            end = time.time()
-            elapsed_time = end - start
-            elapsed_time_fmt = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-    
-            if hash is not None:
-                print(f"{GREEN}Training completed{RESET} in {CYAN}{elapsed_time_fmt}{RESET} for hash {MAGENTA}{hash}{RESET} with seed {seed + 42}.")
-    
+                model_args = {
+                    "n_convs": n_convs,
+                    "num_filters": num_filters,
+                    "dropout": DROPOUT,
+                }
+
+                training_args = {
+                    "dataset_version": DATASET_VERSION,
+                    "seed": seed + 42,
+                    "batch_size": BATCH_SIZE,
+                    "num_epochs": NUM_EPOCHS,
+                    "lr": LR,
+                    "step_size": STEP_SIZE,
+                    "gamma": GAMMA,
+                    "patience": PATIENCE,
+                    "delta": DELTA,
+                    "train_image_size": TRAIN_IMAGE_SIZE,
+                    "augmentations": augmentations,
+                }
+
+                other_args = {
+                    "mode": MODE,
+                    "verbose": VERBOSE,
+                    "experiment_name": EXPERIMENT_NAME,
+                }
+
+                # Create the name of the model
+                if MODE == "crossval":
+                    model_name_template = "model_{hash}_s{seed}_fold{fold}.pth"
+                elif MODE == "fulltrain":
+                    model_name_template = "model_{hash}.pth"
+                else:
+                    raise ValueError(f"Unknown mode: {MODE}")
+                other_args["model_name_template"] = model_name_template
+
+                start = time.time()
+                hash = run_training(model_args, training_args, other_args)
+                end = time.time()
+                elapsed_time = end - start
+                elapsed_time_fmt = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+
+                if hash is not None:
+                    print(f"{GREEN}Training completed{RESET} in {CYAN}{elapsed_time_fmt}{RESET} for hash {MAGENTA}{hash}{RESET} with seed {seed + 42}.")

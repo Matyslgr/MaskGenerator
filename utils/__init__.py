@@ -6,6 +6,6 @@
 ##
 
 from .csv_loggers import CrossvalCSVLogger, FulltrainCSVLogger
-from .utils import set_deterministic_behavior, get_all_pairs_path
+from .utils import set_deterministic_behavior, get_all_train_pairs_path, get_all_test_pairs_path
 from .timer import Timer
-from .plots import plot_folds_histories
+from .plots import plot_folds_histories, plot_history

@@ -18,7 +18,7 @@ from sklearn.model_selection import KFold
 from tqdm import tqdm
 from base_trainer import BaseTrainer
 from utils import CrossvalCSVLogger, Timer, plot_folds_histories
-from config import MODELS_DIR, CROSSVAL_DIR, RESULTS_DIR, CROSSVAL_RESULTS_FILE
+from config import MODELS_DIR, CROSSVAL_DIR, RESULTS_DIR, CROSSVAL_RESULTS_FILE_TEMPLATE
 
 class CrossvalTrainer(BaseTrainer):
     def __init__(self, args, model_fn):
@@ -81,13 +81,22 @@ class CrossvalTrainer(BaseTrainer):
             val_pairs = train_pairs[:val_size]
             train_pairs = train_pairs[val_size:]
 
-            train_dataset = ImageMaskDataset(train_pairs)
-            val_dataset = ImageMaskDataset(val_pairs)
-            test_dataset = ImageMaskDataset(test_pairs)
+            train_dataset = ImageMaskDataset(
+                train_pairs,
+                transform=self.transform_manager.get_train_transform(self.args.augmentations, self.args.train_image_size)
+            )
+            val_dataset = ImageMaskDataset(
+                val_pairs,
+                transform=self.transform_manager.get_val_transform()
+            )
+            test_dataset = ImageMaskDataset(
+                test_pairs,
+                transform=self.transform_manager.get_test_transform()
+            )
 
-            train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True)
-            val_loader = DataLoader(val_dataset, batch_size=self.args.batch_size, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size=self.args.batch_size, shuffle=False)
+            train_loader = DataLoader(train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+            val_loader = DataLoader(val_dataset, batch_size=self.args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+            test_loader = DataLoader(test_dataset, batch_size=self.args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
             model = self.create_model(self.args)
 
@@ -121,7 +130,8 @@ class CrossvalTrainer(BaseTrainer):
                 "elapsed_time": elapsed_time,
             }
 
-            results_path = os.path.join(RESULTS_DIR, CROSSVAL_RESULTS_FILE).replace("\\", "/")
+            crossval_result_file = CROSSVAL_RESULTS_FILE_TEMPLATE.format(experiment_name=self.args.experiment_name)
+            results_path = os.path.join(RESULTS_DIR, crossval_result_file).replace("\\", "/")
             self.logger.log(results_path, results_dict, self.args)
 
             all_histories[fold] = history

@@ -8,48 +8,66 @@
 import torch
 import numpy as np
 from torch.utils.data import Dataset
-from PIL import Image
-from torchvision import transforms
+import cv2
+from transform_manager import TransformManager
+import matplotlib.pyplot as plt
 
-def preprocess_image_mask(image_path, mask_path, image_size=(256, 256)):
+# def show_sample(image, mask):
 
-    transform = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.ToTensor(),
-    ])
+#     print("Image shape:", image.shape)
+#     print("Mask shape:", mask.shape)
+#     print("Image dtype:", image.dtype)
+#     print("Mask dtype:", mask.dtype)
 
-    image = Image.open(image_path).convert('RGB')
-    mask = Image.open(mask_path).convert('L')
+#     transform_manager = TransformManager(num_encoders=4)
+#     image = transform_manager.denormalize(image)
+#     image = image.permute(1, 2, 0).numpy()
+#     mask = mask.squeeze().numpy()
 
-    if image.size != mask.size:
-        raise ValueError(f"Image size {image.size} and mask size {mask.size} do not match!")
 
-    image_tensor = transform(image)
+#     plt.figure(figsize=(10, 5))
+#     plt.subplot(1, 2, 1)
+#     plt.imshow(image)
+#     plt.title("Image")
+#     plt.axis("off")
 
-    mask = mask.resize(image_size, Image.NEAREST)
-    mask_array = np.array(mask, dtype=np.uint8)
-
-    # 0-255 to 0-1
-    mask_array = (mask_array > 127).astype(np.float32)
-    mask_tensor = torch.from_numpy(mask_array).unsqueeze(0)
-
-    unique = torch.unique(mask_tensor)
-    if len(unique) != 2:
-        raise ValueError(f"Expected binary mask with 2 classes, but found {len(unique)} classes.")
-    if unique[0] != 0 or unique[1] != 1:
-        raise ValueError(f"Expected binary mask with classes 0 and 1, but found {unique}.")
-
-    return image_tensor, mask_tensor
+#     plt.subplot(1, 2, 2)
+#     plt.imshow(mask, cmap="gray")
+#     plt.title("Mask")
+#     plt.axis("off")
+#     plt.show()
 
 class ImageMaskDataset(Dataset):
-    def __init__(self, pairs_path, image_size=(256, 256)):
+    def __init__(self, pairs_path, transform=None):
         # Stocker les paires prétraitées
         self.pairs_path = pairs_path
-        self.image_size = image_size
+        self.transform = transform
 
     def __len__(self):
         return len(self.pairs_path)
 
     def __getitem__(self, idx):
         image_path, mask_path = self.pairs_path[idx]
-        return preprocess_image_mask(image_path, mask_path, self.image_size)
+
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        mask = (mask > 127).astype(np.uint8)
+
+        if self.transform:
+            augmented = self.transform(image=image, mask=mask)
+            image = augmented['image']  # Tensor (3, H, W)
+            mask = augmented['mask']    # Tensor (H, W)
+
+        if mask.ndim == 2:
+            mask = mask.unsqueeze(0)  # Convert to (1, H, W)
+        mask = mask.float()
+
+        # show_sample(image, mask)
+        # exit(0)
+
+        unique = torch.unique(mask)
+        if len(unique) != 2 or not torch.all(unique == torch.tensor([0., 1.])):
+            raise ValueError(f"Expected binary mask with classes 0 and 1, found: {unique}")
+        return image, mask
