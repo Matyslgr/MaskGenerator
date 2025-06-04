@@ -1,0 +1,41 @@
+{
+  "os": "Linux-6.8.0-57-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.9.22",
+  "startedAt": "2025-06-03T21:02:57.041293Z",
+  "program": "/root/MaskGenerator/notebooks/test_wandb.ipynb",
+  "codePath": "notebooks/test_wandb.ipynb",
+  "git": {
+    "remote": "git@github.com:Matyslgr/MaskGenerator.git",
+    "commit": "a307d0d6742db0e234859b661fd65037a8301dc9"
+  },
+  "root": "/root/MaskGenerator/notebooks",
+  "host": "L4-robocar",
+  "executable": "/root/miniconda3/envs/Robocar/bin/python",
+  "codePathLocal": "test_wandb.ipynb",
+  "cpu_count": 8,
+  "cpu_count_logical": 8,
+  "gpu": "NVIDIA L4",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "119959187456",
+      "used": "24618270720"
+    }
+  },
+  "memory": {
+    "total": "50511933440"
+  },
+  "cpu": {
+    "count": 8,
+    "countLogical": 8
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA L4",
+      "memoryTotal": "24152899584",
+      "cudaCores": 7424,
+      "architecture": "Ada"
+    }
+  ],
+  "cudaVersion": "12.8"
+}

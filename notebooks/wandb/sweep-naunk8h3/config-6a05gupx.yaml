@@ -1,0 +1,6 @@
+wandb_version: 1
+
+x:
+  value: 10
+y:
+  value: 1
