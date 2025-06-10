@@ -8,25 +8,48 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
+import torch.quantization as tq
+from collections import OrderedDict
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
-
         super().__init__()
         layers = []
-        for _ in range(n_convs):
-            layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=padding, bias=False))
-            layers.append(nn.BatchNorm2d(out_channels))
-            layers.append(nn.ReLU(inplace=True))
+        self.modules_names = []
+
+        if n_convs < 1:
+            raise ValueError("n_convs must be at least 1")
+
+        for i in range(n_convs):
+            conv_name = f"conv_{i+1}"
+            bn_name = f"bn_{i+1}"
+            relu_name = f"relu_{i+1}"
+
+            layers.append((conv_name, nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=padding, bias=False)))
+            layers.append((bn_name, nn.BatchNorm2d(out_channels)))
+            layers.append((relu_name, nn.ReLU(inplace=True)))
+
+            self.modules_names.append((conv_name, bn_name, relu_name))
+
             in_channels = out_channels
 
         if dropout > 0:
-            layers.append(nn.Dropout(dropout))
+            layers.append(("dropout", nn.Dropout(dropout)))
 
-        self.block = nn.Sequential(*layers)
+        self.block = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
         return self.block(x)
+
+    def fuse_model(self):
+        """
+        Fuses the Conv2d, BatchNorm2d, and ReLU layers for quantization.
+        """
+        for conv_name, bn_name, relu_name in self.modules_names:
+            if hasattr(self.block, conv_name) and hasattr(self.block, bn_name) and hasattr(self.block, relu_name):
+                torch.quantization.fuse_modules(self.block, [conv_name, bn_name, relu_name], inplace=True)
+            else:
+                raise ValueError(f"Cannot fuse {conv_name}, {bn_name}, {relu_name} - one of the modules is missing.")
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
@@ -38,6 +61,10 @@ class EncoderBlock(nn.Module):
         skip = self.conv(x)
         x = self.pool(skip)
         return x, skip
+
+    def fuse_model(self):
+        self.conv.fuse_model()
+        # Note: Pooling layers are not fused, as they do not have learnable parameters.
 
 class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
@@ -53,9 +80,20 @@ class DecoderBlock(nn.Module):
         x = torch.cat((skip, x), dim=1)
         return self.conv(x)
 
+    def fuse_model(self):
+        self.conv.fuse_model()
+        # Note: Transpose convolution layers are not fused, as they do not have learnable parameters.
+
 class MyUNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0):
+    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False):
         super().__init__()
+
+        self.quantize = quantize
+
+        if quantize:
+            self.quant = tq.QuantStub()
+            self.dequant = tq.DeQuantStub()
+
         self.encoders = nn.ModuleList()
         self.decoders = nn.ModuleList()
 
@@ -77,8 +115,11 @@ class MyUNet(nn.Module):
         self.final_conv = nn.Conv2d(filters[0], out_channels, kernel_size=1)
 
     def forward(self, x):
+        if self.quantize:
+            x = self.quant(x)
         h, w = x.shape[2:]
         div = 2 ** len(self.encoders)
+
         if h % div != 0 or w % div != 0:
             raise ValueError(f"Input size ({h}, {w}) must be divisible by {div}")
 
@@ -93,4 +134,19 @@ class MyUNet(nn.Module):
         for idx, decoder in enumerate(self.decoders):
             x = decoder(x, skips[idx])
 
-        return self.final_conv(x)
+        x = self.final_conv(x)
+
+        if self.quantize:
+            x = self.dequant(x)
+
+        return x
+
+    def fuse_model(self):
+        """
+        Fuses all Conv2d, BatchNorm2d, and ReLU layers in the model for quantization.
+        """
+        for encoder in self.encoders:
+            encoder.fuse_model()
+        self.bottleneck.fuse_model()
+        for decoder in self.decoders:
+            decoder.fuse_model()

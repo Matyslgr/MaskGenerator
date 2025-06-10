@@ -1,2 +1,0 @@
-hash,dataset_version,dice_score,iou_score,elapsed_time,model_path,seed,augmentations,batch_size,delta,dropout,gamma,lr,n_convs,num_epochs,num_filters,patience,step_size,train_image_size
-19e0663ea2,v0,0.4872552156448364,0.3204233944416046,00:49:20,Models/fulltrain/model_19e0663ea2.pth,42,"['geometry', 'dropout', 'color_invariance', 'color_variation', 'blur', 'noise', 'weather']",32,0.0,0.0,0.1,0.001,2,100,"[32, 64, 128, 256]",30,10,"[256, 256]"
