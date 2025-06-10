@@ -9,8 +9,8 @@ import argparse
 from omegaconf import OmegaConf
 import numpy as np
 
-from utils import set_deterministic_behavior, DatasetLoaderFactory
-from MaskGenerator.mask_generator.models.my_unet import create_model
+from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
+from mask_generator.models.utils import create_model
 from typing import Tuple
 from mask_generator.config import Config
 from trainer import Trainer

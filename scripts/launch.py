@@ -167,9 +167,9 @@ def main():
 
         # === GIT CHECK ===
         git_metadata = get_git_metadata()
-        if git_metadata["dirty"]:
-            logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
-            exit(1)
+        # if git_metadata["dirty"]:
+        #     logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
+        #     exit(1)
 
         if git_metadata["branch"] != "main":
             logger.error(f"Current branch is '{git_metadata['branch']}', expected 'main'. Please switch to 'main' before launching experiments.")

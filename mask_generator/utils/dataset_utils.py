@@ -29,8 +29,7 @@ class BaseDatasetLoader(ABC):
     @abstractmethod
     def get_pairs(self) -> np.ndarray:
         """Doit retourner une liste numpy d'image/mask path pairs."""
-        pass
-
+        raise NotImplementedError("Subclasses should implement this method to return image-mask pairs.")
 
 class SimuDatasetLoader(BaseDatasetLoader):
     def get_pairs(self) -> np.ndarray:

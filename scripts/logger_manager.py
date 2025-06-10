@@ -32,7 +32,7 @@ class LoggerManager:
         if not self.logger.hasHandlers():
             handler = logging.StreamHandler(sys.stdout)
             formatter = ColorFormatter(
-                "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+                "%(asctime)s | %(levelname)-8s | %(name)-10s | %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S"
             )
             handler.setFormatter(formatter)

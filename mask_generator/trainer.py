@@ -20,11 +20,11 @@ import torch.nn as nn
 
 from earlystopping import EarlyStopping
 from dataset import ImageMaskDataset
-from transform_manager import TransformManager
+from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 from utils import Timer
 from mask_generator.config import Config
 import settings
-from utils import TrainingLogger
+from mask_generator.utils import TrainingLogger
 
 def compute_pos_weight(loader):
     total_pos = 0
@@ -38,26 +38,34 @@ def compute_pos_weight(loader):
     return torch.tensor(total_neg / total_pos)
 
 class Trainer():
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, pad_divisor: int):
         self.config = config
         self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_str)
         print(f"Using device: {self.device}")
         self.dice_metric = DiceScore(num_classes=2, average='macro').to(self.device)
         self.iou_metric = BinaryJaccardIndex(threshold=0.5).to(self.device)
-        self.transform_manager = TransformManager(seed=config.training.seed, num_encoders=len(config.model.filters))
+        self.train_transform = AlbumentationsTrainTransform(
+            seed=config.training.seed,
+            pad_divisor=pad_divisor,
+            image_size=config.training.train_image_size,
+            augmentations_names=config.training.augmentations,
+        )
+        self.infer_transform = KorniaInferTransform(
+            pad_divisor=pad_divisor,
+            device=self.device_str
+        )
+
         self.logger = TrainingLogger(config.other.run_dir)
 
         if config.training.use_amp:
             self.scaler = GradScaler()
 
     def _prepare_loaders(self, train_pairs, val_pairs, test_pairs):
-        train_transform = self.transform_manager.get_train_transform(self.config.training.augmentations, self.config.training.train_image_size)
-        eval_transform = self.transform_manager.get_eval_transform()
 
-        train_ds = ImageMaskDataset(train_pairs, transform=train_transform)
-        val_ds = ImageMaskDataset(val_pairs, transform=eval_transform)
-        test_ds = ImageMaskDataset(test_pairs, transform=eval_transform)
+        train_ds = ImageMaskDataset(train_pairs, transform=self.train_transform)
+        val_ds = ImageMaskDataset(val_pairs, transform=self.infer_transform)
+        test_ds = ImageMaskDataset(test_pairs, transform=self.infer_transform)
 
         kwargs = {
             "batch_size": self.config.training.batch_size,
