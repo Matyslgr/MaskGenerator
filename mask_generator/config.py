@@ -6,31 +6,21 @@
 ##
 
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple
 
 @dataclass
 class ModelConfig:
-    arch: str = "my_unet"
     in_channels: int = 3
     out_channels: int = 1
-    model_args: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        assert self.in_channels > 0, "Input channels must be a positive integer."
-        assert self.out_channels > 0, "Output channels must be a positive integer."
-        if self.arch == "my_unet":
-            required_keys = {"n_convs", "filters", "dropout"}
-            missing = required_keys - self.model_args.keys()
-            assert not missing, f"Missing required model arguments for 'my_unet': {missing}"
-        else:
-            for k in ["encoder_name", "encoder_weights"]:
-                assert self.model_args.get(k) is not None, f"Missing '{k}' in model_args for architecture {self.arch}"
-
+    filters: List[int] = field(default_factory=lambda: [32, 64, 128, 256])
+    n_convs: int = 2
+    dropout: float = 0.0
+    quantize: bool = False
 
 @dataclass
 class TrainingConfig:
-    train_dataset_path: str = "/root/MaskGenerator/Datasets/train/simu_v0"
-    eval_dataset_path: str = "/root/MaskGenerator/Datasets/test/MoLane"
+    train_dataset_path: str
+    eval_dataset_path: str
     seed: int = 42
     batch_size: int = 32
     num_epochs: int = 100
@@ -49,6 +39,7 @@ class OtherConfig:
     name: str
     run_hash: str
     run_dir: str
+    git_commit: str
     verbose: bool = False
 
 @dataclass

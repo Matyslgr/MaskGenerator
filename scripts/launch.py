@@ -10,13 +10,17 @@ import subprocess
 import hashlib
 import time
 import json
-import yaml
+import logging
 from omegaconf import OmegaConf
 import itertools
 import shutil
 from datetime import timedelta
-from MaskGenerator.mask_generator.config import Config
+from git import Repo
+from pathlib import Path
+
+from mask_generator.config import Config
 import mask_generator.settings as settings
+from scripts.logger_manager import LoggerManager
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -29,8 +33,22 @@ RESET = "\033[0m"
 CONFIG_FILE = "config.yaml"
 TRAIN_SCRIPT = "train.py"
 
+logger_manager = LoggerManager(__name__, level=logging.DEBUG)
+logger = logger_manager.get_logger()
+
+def get_git_metadata(repo_path: str = ".") -> dict:
+    repo = Repo(Path(repo_path).resolve())
+    head_commit = repo.head.commit
+
+    return {
+        "commit": head_commit.hexsha,
+        "branch": repo.active_branch.name if not repo.head.is_detached else "detached",
+        "dirty": repo.is_dirty(untracked_files=True),
+    }
+
 def launch_training(config_path: str) -> None:
     """Launch the training script with the given configuration."""
+    logger.info(f"Launching training with config: {config_path}")
     command = ["python", os.path.join("mask_generator", TRAIN_SCRIPT), "--config", config_path]
     subprocess.run(command)
 
@@ -78,7 +96,7 @@ def run_already_exists(run_hash: str) -> bool:
             if all(os.path.exists(os.path.join(run_dir_path, f)) for f in expected_files):
                 return True
             else:
-                print(f"{RED}Removing incomplete run directory: {run_dir_path}{RESET}")
+                logger.warning(f"Run {run_hash} is incomplete. Expected files are missing in {run_dir_path}.")
                 shutil.rmtree(run_dir_path, ignore_errors=True)
 
     return False
@@ -99,7 +117,8 @@ def main():
     model_args = {
         "n_convs": [2],
         "filters": [[32, 64, 128, 256]],
-        "dropout": [0.0, 0.3, 0.7],
+        "dropout": [0.0],
+        "quantize": [True],
     }
 
     training_args = {
@@ -134,7 +153,7 @@ def main():
     all_run_configs = list(recursive_product(config))
     total_runs = len(all_run_configs)
 
-    print(f"Total configurations to run: {total_runs}")
+    logger.info(f"Total configurations to run: {total_runs}")
 
     completed_runs = 0
     total_elapsed_time = 0.0
@@ -143,14 +162,25 @@ def main():
         run_hash = make_hash(run_config["model"], run_config["training"])
 
         if run_already_exists(run_hash):
-            print(f"{YELLOW}[{i+1}/{total_runs}] Run {run_hash} already exists. Skipping...{RESET}")
+            logger.info(f"[{i+1}/{total_runs}] Run {run_hash} already exists. Skipping...")
             continue
+
+        # === GIT CHECK ===
+        git_metadata = get_git_metadata()
+        if git_metadata["dirty"]:
+            logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
+            exit(1)
+
+        if git_metadata["branch"] != "main":
+            logger.error(f"Current branch is '{git_metadata['branch']}', expected 'main'. Please switch to 'main' before launching experiments.")
+            exit(1)
 
         run_dir = format_run_dir(run_hash)
         run_config["other"]["name"] = run_dir
         run_dir_path = os.path.join(settings.experiment_dir, run_dir)
         run_config["other"]["run_hash"] = run_hash
         run_config["other"]["run_dir"] = run_dir_path
+        run_config["other"]["git_commit"] = git_metadata["commit"]
 
         default_cfg = OmegaConf.structured(Config)
         run_cfg = OmegaConf.create(run_config)
@@ -163,7 +193,6 @@ def main():
         with open(config_path, "w") as f:
             OmegaConf.save(config=cfg, f=f.name)
 
-        print(f"{BLUE}Running configuration {run_hash} [{i+1}/{total_runs}]{RESET}")
         start = time.time()
         launch_training(config_path)
         end = time.time()
@@ -178,8 +207,7 @@ def main():
         elapsed_time_fmt = str(timedelta(seconds=int(run_time)))
         est_remaining_fmt = str(timedelta(seconds=int(est_remaining_time)))
 
-        print(f"{GREEN}Run {run_hash} completed in {elapsed_time_fmt}{RESET}")
-        print(f"{MAGENTA}Estimated time remaining: {est_remaining_fmt}{RESET}")
+        logger.info(f"[{i+1}/{total_runs}] Run {run_hash} completed in {elapsed_time_fmt}. Estimated time remaining: {est_remaining_fmt}")
 
 if __name__ == "__main__":
     main()

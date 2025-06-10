@@ -12,7 +12,7 @@ import numpy as np
 from utils import set_deterministic_behavior, DatasetLoaderFactory
 from MaskGenerator.mask_generator.models.my_unet import create_model
 from typing import Tuple
-from mask_generator.config import Config, ModelConfig, TrainingConfig, OtherConfig
+from mask_generator.config import Config
 from trainer import Trainer
 
 def parse_args():
@@ -40,21 +40,21 @@ def prepare_pairs(config: Config) -> Tuple[np.ndarray, np.ndarray]:
 def main():
     args = parse_args()
 
-    run_cfg = OmegaConf.load(args.config)
+    try:
+        run_cfg = OmegaConf.load(args.config)
 
-    default_cfg = OmegaConf.structured(Config)
-    cfg = OmegaConf.merge(default_cfg, run_cfg)
-    OmegaConf.resolve(cfg)
+        default_cfg = OmegaConf.structured(Config)
 
-    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        cfg = OmegaConf.merge(default_cfg, run_cfg)
+        OmegaConf.resolve(cfg)
 
-    config = Config(
-        model=ModelConfig(**cfg_dict['model']),
-        training=TrainingConfig(**cfg_dict['training']),
-        other=OtherConfig(**cfg_dict['other'])
-    )
-    if not isinstance(config, Config):
-        raise TypeError("Configuration must be an instance of Config class.")
+        config: Config = OmegaConf.to_object(cfg)
+
+    except Exception as e:
+        print(f"[ERROR] Failed to load configuration: {e}")
+        return
+
+    assert isinstance(config, Config), "Configuration must be an instance of Config class."
 
     set_deterministic_behavior(config.training.seed)
 
