@@ -88,6 +88,7 @@ def run_already_exists(run_hash: str) -> bool:
             # Check if all expected files exist
             expected_files = [
                 settings.model_filename,
+                settings.onnx_filename,
                 settings.config_filename,
                 settings.metrics_filename,
                 settings.results_filename,
