@@ -14,7 +14,7 @@ import mask_generator.settings as settings
 
 logger = logging.getLogger(settings.logger_name)
 
-def get_default_qat_qconfig(backend="fbgemm") -> tq.QConfig:
+def get_default_qat_qconfig() -> tq.QConfig:
     """
     Returns the default QConfig for Quantization Aware Training (QAT).
     Args:
@@ -48,10 +48,26 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model.eval()
     model.fuse_model()
     model.train()
-    model.qconfig = get_default_qat_qconfig(backend)
+    model.qconfig = get_default_qat_qconfig()
     tq.prepare_qat(model, inplace=True)
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model
+
+def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
+    """
+    Converts a Quantization Aware Training (QAT) model to a quantized model.
+    Args:
+        model (MyUNet): The QAT model to convert.
+    Returns:
+        MyUNet: The quantized model.
+    """
+    if not isinstance(model, MyUNet):
+        raise TypeError("model must be an instance of MyUNet")
+
+    model.eval()
+    quantized_model = tq.convert(model, inplace=False)
+    logger.info("Converted QAT model to quantized model")
+    return quantized_model
 
 def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)) -> None:
     """
@@ -64,15 +80,17 @@ def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 25
     if not isinstance(model, MyUNet):
         raise TypeError("model must be an instance of MyUNet")
 
+    quantized_model = convert_qat_to_quantized(model)
+
     device = torch.device("cpu")
 
-    model.to(device)
-    model.eval()
+    quantized_model.to(device)
+    quantized_model.eval()
 
     dummy_input = torch.randn(*input_shape)
 
     export_kwargs = {
-        "model": model,
+        "model": quantized_model,
         "args": dummy_input,
         "f": onnx_path,
         "opset_version": 11,

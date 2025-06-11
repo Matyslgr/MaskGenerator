@@ -10,7 +10,6 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 import torch.quantization as tq
 from collections import OrderedDict
-import warnings
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
@@ -75,7 +74,6 @@ class DecoderBlock(nn.Module):
 
     def forward(self, x, skip):
         x = self.up(x)
-        x = nn.functional.interpolate(x, size=skip.shape[2:], mode='bilinear', align_corners=False)
         x = torch.cat((skip, x), dim=1)
         return self.conv(x)
 
@@ -86,8 +84,6 @@ class DecoderBlock(nn.Module):
 class MyUNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False, inplace=False):
         super().__init__()
-
-        self.quantize = quantize
 
         if quantize:
             self.quant = tq.QuantStub()
@@ -116,19 +112,6 @@ class MyUNet(nn.Module):
     def forward(self, x):
         if self.quantize:
             x = self.quant(x)
-        h, w = x.shape[2:]
-        div = 2 ** len(self.encoders)
-
-        if h % div != 0 or w % div != 0:
-            new_h = ((h + div - 1) // div) * div
-            new_w = ((w + div - 1) // div) * div
-            warnings.warn(
-                f"Input size ({h}, {w}) is not divisible by {div}. "
-                "Resizing input to ({new_h}, {new_w}) for compatibility.",
-                "Consider preprocessing inputs accordingly.",
-                UserWarning
-            )
-            x = nn.functional.interpolate(x, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
         skips = []
         for encoder in self.encoders:
