@@ -197,7 +197,7 @@ class Trainer():
 
         return metrics, cm
 
-    def fit(self, model: nn.Module, train_pairs, test_pairs):
+    def fit(self, model: nn.Module, train_pairs, test_pairs) -> nn.Module:
         model = model.to(self.device)
         val_size = int(len(test_pairs) * 0.2)
         val_pairs = test_pairs[:val_size]
@@ -266,3 +266,5 @@ class Trainer():
             elapsed_time=elapsed_time,
             test_metrics=test_metrics
         )
+        return model
+

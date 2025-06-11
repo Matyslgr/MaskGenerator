@@ -33,6 +33,8 @@ class TrainingConfig:
     augmentations: List[str] = field(default_factory=lambda: [])
     weighted_loss: bool = True
     use_amp: bool = False
+    qat: bool = False
+    qat_backend: str = "fbgemm"
 
 @dataclass
 class OtherConfig:

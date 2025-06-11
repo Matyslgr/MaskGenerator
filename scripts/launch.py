@@ -136,6 +136,7 @@ def main():
         "augmentations": augmentations,
         "weighted_loss": [True],
         "use_amp": [False],
+        "qat": [True],
     }
 
     other_args = {

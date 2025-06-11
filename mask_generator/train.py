@@ -9,11 +9,13 @@ import argparse
 from omegaconf import OmegaConf
 import numpy as np
 from typing import Tuple
+import os
 
 from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
 from mask_generator.models.utils import create_model
 from mask_generator.config import Config
 from mask_generator.trainer import Trainer
+from mask_generator.qat_utils import prepare_qat_model, export_to_onnx
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
@@ -62,8 +64,14 @@ def main():
 
     model, pad_divisor = create_model(config.model)
 
+    if config.training.qat:
+        model = prepare_qat_model(model, config.training.qat_backend)
+
     trainer = Trainer(config, pad_divisor)
-    trainer.fit(model, train_pairs, test_pairs)
+    model = trainer.fit(model, train_pairs, test_pairs)
+
+    if config.training.qat:
+        export_to_onnx(model, os.path.join(config.other.run_dir, "model.onnx"))
 
 if __name__ == "__main__":
     main()
