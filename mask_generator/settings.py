@@ -19,6 +19,7 @@ os.makedirs(test_dataset_dir, exist_ok=True)
 
 # Filenames
 model_filename = "model.pth"
+onnx_filename = "model.onnx"
 config_filename = "config.yaml"
 metrics_filename = "metrics.csv"
 results_filename = "results.json"
