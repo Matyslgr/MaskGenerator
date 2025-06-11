@@ -17,8 +17,7 @@ logger = logging.getLogger(settings.logger_name)
 def get_default_qat_qconfig() -> tq.QConfig:
     """
     Returns the default QConfig for Quantization Aware Training (QAT).
-    Args:
-        backend (str): The quantization backend to use. Default is "fbgemm".
+    
         Returns:
         tq.QConfig: The default QConfig for QAT.
     """
@@ -69,7 +68,7 @@ def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
     logger.info("Converted QAT model to quantized model")
     return quantized_model
 
-def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)) -> None:
+def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
     """
     Exports the model to ONNX format.
     Args:
@@ -79,15 +78,13 @@ def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 25
     """
     if not isinstance(model, MyUNet):
         raise TypeError("model must be an instance of MyUNet")
+    device = torch.device("cpu")
+
+    model.to(device)
 
     quantized_model = convert_qat_to_quantized(model)
 
-    device = torch.device("cpu")
-
-    quantized_model.to(device)
-    quantized_model.eval()
-
-    dummy_input = torch.randn(*input_shape)
+    dummy_input = torch.randn(*input_shape, device=device)
 
     export_kwargs = {
         "model": quantized_model,
