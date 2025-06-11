@@ -6,9 +6,13 @@
 ##
 
 import torch
+import logging
 import torch.quantization as tq
 from torch.ao.quantization.observer import MinMaxObserver
 from mask_generator.models.my_unet import MyUNet
+import mask_generator.settings as settings
+
+logger = logging.getLogger(settings.logger_name)
 
 def get_default_qat_qconfig(backend="fbgemm") -> tq.QConfig:
     """
@@ -46,6 +50,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model.train()
     model.qconfig = get_default_qat_qconfig(backend)
     tq.prepare_qat(model, inplace=True)
+    logger.info(f"Model prepared for QAT with backend: {backend}")
     return model
 
 def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)) -> None:
@@ -59,7 +64,11 @@ def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 25
     if not isinstance(model, MyUNet):
         raise TypeError("model must be an instance of MyUNet")
 
+    device = torch.device("cpu")
+
+    model.to(device)
     model.eval()
+
     dummy_input = torch.randn(*input_shape)
 
     export_kwargs = {
@@ -77,4 +86,4 @@ def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 25
     }
 
     torch.onnx.export(**export_kwargs)
-    print(f"✅ Exported model to {onnx_path}")
+    logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")
