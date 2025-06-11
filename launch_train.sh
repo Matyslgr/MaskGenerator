@@ -30,7 +30,6 @@ echo "[INFO] Launching training run $RUN_ID on $BRANCH branch"
 
 cd "$BASE_DIR"
 git fetch origin
-git checkout $BRANCH
 git pull origin $BRANCH
 
 if [ -d "$WORKTREE" ]; then
@@ -38,7 +37,7 @@ if [ -d "$WORKTREE" ]; then
   git worktree remove --force "$WORKTREE"
 fi
 
-git worktree add --detach "$WORKTREE" $BRANCH
+git worktree add --detach "$WORKTREE" origin/$BRANCH
 
 COMMIT_SHA=$(git -C "$WORKTREE" rev-parse HEAD)
 
