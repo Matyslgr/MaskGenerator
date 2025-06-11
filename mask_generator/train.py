@@ -70,8 +70,7 @@ def main():
     trainer = Trainer(config, pad_divisor)
     model = trainer.fit(model, train_pairs, test_pairs)
 
-    if config.training.qat:
-        export_to_onnx(model, os.path.join(config.other.run_dir, "model.onnx"))
+    export_to_onnx(model, os.path.join(config.other.run_dir, "model.onnx"))
 
 if __name__ == "__main__":
     main()

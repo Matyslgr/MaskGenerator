@@ -22,8 +22,9 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
         raise TypeError("model must be an instance of MyUNet")
 
     torch.backends.quantized.engine = backend
-    model.train()
+    model.eval()
     model.fuse_model()
+    model.train()
     model.qconfig = tq.get_default_qat_qconfig(backend)
     tq.prepare_qat(model, inplace=True)
     return model
