@@ -91,6 +91,7 @@ def run_already_exists(run_hash: str) -> bool:
                 settings.config_filename,
                 settings.metrics_filename,
                 settings.results_filename,
+                settings.onnx_filename,
             ]
             if all(os.path.exists(os.path.join(run_dir_path, f)) for f in expected_files):
                 return True
