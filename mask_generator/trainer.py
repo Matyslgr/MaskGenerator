@@ -12,9 +12,10 @@ import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torchmetrics.segmentation import DiceScore
-from torchmetrics.classification import BinaryJaccardIndex
+from torchmetrics.classification import BinaryJaccardIndex, BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score
 from torch.amp import autocast, GradScaler
 from sklearn.metrics import confusion_matrix
+from typing import Tuple, Optional
 import torch.nn as nn
 
 from mask_generator.earlystopping import EarlyStopping
@@ -23,7 +24,8 @@ from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferT
 from mask_generator.utils import Timer
 from mask_generator.config import Config
 import mask_generator.settings as settings
-from mask_generator.utils import TrainingLogger
+from mask_generator.experiment_tracker import ExperimentTracker
+from mask_generator.metrics import Metrics
 
 def compute_pos_weight(loader):
     total_pos = 0
@@ -42,8 +44,17 @@ class Trainer():
         self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_str)
         print(f"Using device: {self.device}")
+
+        # Metrics
         self.dice_metric = DiceScore(num_classes=2, average='macro').to(self.device)
-        self.iou_metric = BinaryJaccardIndex(threshold=0.5).to(self.device)
+        self.iou_metric = BinaryJaccardIndex().to(self.device)
+        self.accuracy_metric = BinaryAccuracy().to(self.device)
+        self.precision_metric = BinaryPrecision().to(self.device)
+        self.recall_metric = BinaryRecall().to(self.device)
+        self.f1_metric = BinaryF1Score().to(self.device)
+
+        self.tracker = ExperimentTracker(config.other.run_dir)
+
         self.train_transform = AlbumentationsTrainTransform(
             seed=config.training.seed,
             pad_divisor=pad_divisor,
@@ -54,8 +65,6 @@ class Trainer():
             pad_divisor=pad_divisor,
             device=self.device_str
         )
-
-        self.logger = TrainingLogger(config.other.run_dir)
 
         if config.training.use_amp:
             self.scaler = GradScaler()
@@ -81,10 +90,16 @@ class Trainer():
             DataLoader(test_ds, shuffle=False, **kwargs)
         )
 
-    def _train_epoch(self, model, loader, optimizer, criterion):
+    def _train_epoch(self, model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, criterion: nn.Module) -> Metrics:
         model.train()
+
         self.dice_metric.reset()
         self.iou_metric.reset()
+        self.accuracy_metric.reset()
+        self.precision_metric.reset()
+        self.recall_metric.reset()
+        self.f1_metric.reset()
+
         total_loss = 0.0
 
         for images, masks in tqdm(loader, desc="  Batch", leave=False):
@@ -112,17 +127,31 @@ class Trainer():
             preds = (torch.sigmoid(outputs) > 0.5).float()
             self.dice_metric(preds, masks)
             self.iou_metric(preds, masks)
+            self.accuracy_metric(preds, masks)
+            self.precision_metric(preds, masks)
+            self.recall_metric(preds, masks)
+            self.f1_metric(preds, masks)
 
-        return {
-            "loss": total_loss / len(loader),
-            "dice": self.dice_metric.compute().item(),
-            "iou": self.iou_metric.compute().item()
-        }
+        return Metrics(
+            loss=total_loss / len(loader),
+            dice=self.dice_metric.compute().item(),
+            iou=self.iou_metric.compute().item(),
+            acc=self.accuracy_metric.compute().item(),
+            precision=self.precision_metric.compute().item(),
+            recall=self.recall_metric.compute().item(),
+            f1=self.f1_metric.compute().item()
+        )
 
-    def _evaluate(self, model: nn.Module, loader, criterion, with_conf_matrix: bool = False):
+    def _evaluate(self, model: nn.Module, loader: DataLoader, criterion: nn.Module, with_conf_matrix: bool = False) -> Tuple[Metrics, Optional[np.ndarray]]:
         model.eval()
+
         self.dice_metric.reset()
         self.iou_metric.reset()
+        self.accuracy_metric.reset()
+        self.precision_metric.reset()
+        self.recall_metric.reset()
+        self.f1_metric.reset()
+
         total_loss = 0.0
 
         if with_conf_matrix:
@@ -135,28 +164,38 @@ class Trainer():
                 outputs = model(images)
 
                 preds = (torch.sigmoid(outputs) > 0.5).float()
-                self.dice_metric(preds, masks)
-                self.iou_metric(preds, masks)
 
                 loss = criterion(outputs, masks)
                 total_loss += loss.item()
+
+                self.dice_metric(preds, masks)
+                self.iou_metric(preds, masks)
+                self.accuracy_metric(preds, masks)
+                self.precision_metric(preds, masks)
+                self.recall_metric(preds, masks)
+                self.f1_metric(preds, masks)
 
                 if with_conf_matrix:
                     all_preds.append(preds.cpu().numpy().flatten())
                     all_targets.append(masks.cpu().numpy().flatten())
 
-        result = {
-            "loss": total_loss / len(loader),
-            "dice": self.dice_metric.compute().item(),
-            "iou": self.iou_metric.compute().item(),
-        }
+        metrics = Metrics(
+            loss=total_loss / len(loader),
+            dice=self.dice_metric.compute().item(),
+            iou=self.iou_metric.compute().item(),
+            acc=self.accuracy_metric.compute().item(),
+            precision=self.precision_metric.compute().item(),
+            recall=self.recall_metric.compute().item(),
+            f1=self.f1_metric.compute().item()
+        )
+
+        cm = None
         if with_conf_matrix:
             all_preds = np.concatenate(all_preds)
             all_targets = np.concatenate(all_targets)
             cm = confusion_matrix(all_targets, all_preds)
-            result["conf_matrix"] = cm
 
-        return result
+        return metrics, cm
 
     def fit(self, model: nn.Module, train_pairs, test_pairs):
         model = model.to(self.device)
@@ -196,12 +235,12 @@ class Trainer():
             for epoch in pbar:
                 start = time.time()
                 train_metrics = self._train_epoch(model, train_loader, optimizer, criterion)
-                val_metrics = self._evaluate(model, val_loader, criterion)
+                val_metrics, _ = self._evaluate(model, val_loader, criterion)
                 end = time.time()
                 elapsed = end - start
 
                 lr = scheduler.get_last_lr()[0]
-                self.logger.log_epoch(epoch, lr, elapsed, train_metrics, val_metrics)
+                self.tracker.log_epoch(epoch, lr, elapsed, train_metrics, val_metrics)
 
                 scheduler.step()
                 early_stopping(epoch, val_metrics["loss"], model)
@@ -212,21 +251,18 @@ class Trainer():
                     "Best": f"{early_stopping.best_loss:.4f}",
                 })
 
-                if epoch % 5 == 0:
-                    self.logger.save_plots()
-
+                torch.cuda.empty_cache()
                 if early_stopping.early_stop:
                     break
 
-                torch.cuda.empty_cache()
-
             model = early_stopping.load_best_model(model)
-            test_metrics = self._evaluate(model, test_loader, criterion, with_conf_matrix=True)
+            test_metrics, cm = self._evaluate(model, test_loader, criterion, with_conf_matrix=True)
 
         elapsed_time = timer.elapsed
         best_epoch = early_stopping.best_epoch
-        self.logger.save_all(
-            test_metrics=test_metrics,
-            elapsed_time=elapsed_time,
+        self.tracker.save_conf_matrix(cm)
+        self.tracker.save_results(
             best_epoch=best_epoch,
+            elapsed_time=elapsed_time,
+            test_metrics=test_metrics
         )
