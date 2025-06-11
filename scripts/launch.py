@@ -20,7 +20,7 @@ from pathlib import Path
 
 from mask_generator.config import Config
 import mask_generator.settings as settings
-from scripts.logger_manager import LoggerManager
+from mask_generator.logger import setup_logging
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -33,8 +33,7 @@ RESET = "\033[0m"
 CONFIG_FILE = "config.yaml"
 TRAIN_MODULE = "mask_generator.train"
 
-logger_manager = LoggerManager(__name__, level=logging.DEBUG)
-logger = logger_manager.get_logger()
+logger = setup_logging(__name__, level=logging.DEBUG)
 
 def get_git_metadata(repo_path: str = ".") -> dict:
     repo = Repo(Path(repo_path).resolve())
@@ -111,7 +110,7 @@ def main():
     POSSIBLES_AUGMENTATIONS = ["geometry", "dropout", "color_invariance", "color_variation", "blur", "noise", "weather"]
 
     augmentations = [
-        [],
+        POSSIBLES_AUGMENTATIONS
     ]
 
     model_args = {

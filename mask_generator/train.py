@@ -5,17 +5,20 @@
 ## train
 ##
 
+import os
+import logging
 import argparse
-from omegaconf import OmegaConf
 import numpy as np
 from typing import Tuple
-import os
+from omegaconf import OmegaConf
 
-from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
-from mask_generator.models.utils import create_model
 from mask_generator.config import Config
 from mask_generator.trainer import Trainer
+import mask_generator.settings as settings
+from mask_generator.logger import setup_logging
+from mask_generator.models.utils import create_model
 from mask_generator.qat_utils import prepare_qat_model, export_to_onnx
+from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
@@ -34,13 +37,11 @@ def prepare_pairs(config: Config) -> Tuple[np.ndarray, np.ndarray]:
         config.training.eval_dataset_path,
     ).get_pairs()
 
-    print(f"[INFO] Successfully loaded {len(train_pairs)} train pairs of images and masks.")
-    print(f"[INFO] Successfully loaded {len(test_pairs)} test pairs of images and masks.")
-
     return train_pairs, test_pairs
 
 def main():
     args = parse_args()
+
 
     try:
         run_cfg = OmegaConf.load(args.config)
@@ -58,11 +59,16 @@ def main():
 
     assert isinstance(config, Config), "Configuration must be an instance of Config class."
 
+    logger = setup_logging(settings.logger_name, log_file=os.path.join(config.other.run_dir, settings.logging_filename))
+
     set_deterministic_behavior(config.training.seed)
 
     train_pairs, test_pairs = prepare_pairs(config)
 
+    logger.info(f"Loaded {len(train_pairs)} training pairs and {len(test_pairs)} testing pairs.")
+
     model, pad_divisor = create_model(config.model)
+    logger.info(f"Model created with pad_divisor: {pad_divisor}")
 
     if config.training.qat:
         model = prepare_qat_model(model, config.training.qat_backend)

@@ -13,6 +13,7 @@ import numpy as np
 import time
 from dataclasses import asdict
 
+import mask_generator.settings as settings
 from mask_generator.metrics import Metrics
 
 class ExperimentTracker:
@@ -20,9 +21,9 @@ class ExperimentTracker:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
 
-        self.metrics_path = os.path.join(self.output_dir, "metrics.csv")
-        self.results_path = os.path.join(self.output_dir, "results.json")
-        self.conf_matrix_path = os.path.join(self.output_dir, "conf_matrix.npy")
+        self.metrics_path = os.path.join(self.output_dir, settings.metrics_filename)
+        self.results_path = os.path.join(self.output_dir, settings.results_filename)
+        self.conf_matrix_path = os.path.join(self.output_dir, settings.conf_matrix_filename)
 
         self.fieldnames = ['epoch', 'lr', 'epoch_time']
         for loader in ['train', 'val']:
