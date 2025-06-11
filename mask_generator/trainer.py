@@ -9,7 +9,6 @@ import torch
 import time
 import os
 import numpy as np
-from typing import List
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torchmetrics.segmentation import DiceScore
@@ -18,18 +17,18 @@ from torch.amp import autocast, GradScaler
 from sklearn.metrics import confusion_matrix
 import torch.nn as nn
 
-from earlystopping import EarlyStopping
-from dataset import ImageMaskDataset
+from mask_generator.earlystopping import EarlyStopping
+from mask_generator.dataset import ImageMaskDataset
 from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
-from utils import Timer
+from mask_generator.utils import Timer
 from mask_generator.config import Config
-import settings
+import mask_generator.settings as settings
 from mask_generator.utils import TrainingLogger
 
 def compute_pos_weight(loader):
     total_pos = 0
     total_neg = 0
-    for _, masks, _, _ in loader:
+    for _, masks in loader:
         masks = masks.view(-1)
         total_pos += masks.sum().item()
         total_neg += (1 - masks).sum().item()
@@ -88,8 +87,7 @@ class Trainer():
         self.iou_metric.reset()
         total_loss = 0.0
 
-        for batch in tqdm(loader, desc="  Batch", leave=False):
-            images, masks, _, _ = batch
+        for images, masks in tqdm(loader, desc="  Batch", leave=False):
             images, masks = images.to(self.device), masks.to(self.device)
 
             optimizer.zero_grad()
@@ -132,8 +130,7 @@ class Trainer():
             all_targets = []
 
         with torch.no_grad():
-            for batch in tqdm(loader, desc="  Eval", leave=False):
-                images, masks, _, _ = batch
+            for images, masks in tqdm(loader, desc="  Eval", leave=False):
                 images, masks = images.to(self.device), masks.to(self.device)
                 outputs = model(images)
 
@@ -162,6 +159,7 @@ class Trainer():
         return result
 
     def fit(self, model: nn.Module, train_pairs, test_pairs):
+        model = model.to(self.device)
         val_size = int(len(test_pairs) * 0.2)
         val_pairs = test_pairs[:val_size]
         test_pairs = test_pairs[val_size:]
@@ -169,7 +167,7 @@ class Trainer():
         train_loader, val_loader, test_loader = self._prepare_loaders(train_pairs, val_pairs, test_pairs)
 
         if self.config.training.weighted_loss:
-            pos_weight = torch.tensor(33.932899475097656).to(self.device)
+            pos_weight = torch.tensor(31.568326950073242).to(self.device)
             # pos_weight = compute_pos_weight(train_loader).to(self.device)
             # print(f"Computed positive weight: {pos_weight.item()}")
         else:

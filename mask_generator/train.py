@@ -8,12 +8,12 @@
 import argparse
 from omegaconf import OmegaConf
 import numpy as np
+from typing import Tuple
 
 from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
 from mask_generator.models.utils import create_model
-from typing import Tuple
 from mask_generator.config import Config
-from trainer import Trainer
+from mask_generator.trainer import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
@@ -60,9 +60,9 @@ def main():
 
     train_pairs, test_pairs = prepare_pairs(config)
 
-    model = create_model(config.model)
+    model, pad_divisor = create_model(config.model)
 
-    trainer = Trainer(config)
+    trainer = Trainer(config, pad_divisor)
     trainer.fit(model, train_pairs, test_pairs)
 
 if __name__ == "__main__":

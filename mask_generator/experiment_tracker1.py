@@ -2,7 +2,7 @@
 ## EPITECH PROJECT, 2025
 ## root [SSH: pinkcc]
 ## File description:
-## training_logger
+## training_monitor
 ##
 
 import os
@@ -10,34 +10,31 @@ import csv
 import yaml
 import numpy as np
 import time
-import torch
-import cv2
-import seaborn as sns
 from typing import Dict
 from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import mask_generator.settings as settings
 
-
 GREEN = "\033[92m"
 RESET = "\033[0m"
 
 class TrainingLogger:
-    def __init__(self, run_dir: str):
-        self.run_dir = run_dir
+    def __init__(self, output_dir: str):
+        self.output_dir = output_dir
 
         self.paths = {
-            "results": os.path.join(run_dir, settings.results_filename),
-            "metrics": os.path.join(run_dir, settings.metrics_filename),
-            "results_yaml": os.path.join(run_dir, settings.results_filename),
-            "curves": os.path.join(run_dir, settings.plots_dir, "curves.png"),
-            "lr_schedule": os.path.join(run_dir, settings.plots_dir, "lr_schedule.png"),
-            "conf_matrix": os.path.join(run_dir, settings.plots_dir, "confusion_matrix.png"),
+            "results": os.path.join(output_dir, settings.results_filename),
+            "metrics": os.path.join(output_dir, settings.metrics_filename),
+            "results_yaml": os.path.join(output_dir, settings.results_filename),
+            "curves": os.path.join(output_dir, settings.plots_dir, "curves.png"),
+            "lr_schedule": os.path.join(output_dir, settings.plots_dir, "lr_schedule.png"),
+            "conf_matrix": os.path.join(output_dir, settings.plots_dir, "confusion_matrix.png"),
         }
 
-        os.makedirs(os.path.join(run_dir, settings.plots_dir), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, settings.plots_dir), exist_ok=True)
 
         self.history = {
+            "epochs": [],
             "train": [],
             "val": [],
             "lr": [],
@@ -167,3 +164,5 @@ class TrainingLogger:
         self.save_plots()
         self.save_conf_matrix(cm_sklearn)
         print(f"{GREEN}All Results saved for run {self.run_dir}{RESET}")
+
+    

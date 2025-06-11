@@ -31,7 +31,7 @@ CYAN = "\033[96m"
 RESET = "\033[0m"
 
 CONFIG_FILE = "config.yaml"
-TRAIN_SCRIPT = "train.py"
+TRAIN_MODULE = "mask_generator.train"
 
 logger_manager = LoggerManager(__name__, level=logging.DEBUG)
 logger = logger_manager.get_logger()
@@ -49,7 +49,7 @@ def get_git_metadata(repo_path: str = ".") -> dict:
 def launch_training(config_path: str) -> None:
     """Launch the training script with the given configuration."""
     logger.info(f"Launching training with config: {config_path}")
-    command = ["python", os.path.join("mask_generator", TRAIN_SCRIPT), "--config", config_path]
+    command = ["python", "-m", TRAIN_MODULE, "--config", config_path]
     subprocess.run(command)
 
 def make_hash(*dicts: dict) -> str:
@@ -167,9 +167,9 @@ def main():
 
         # === GIT CHECK ===
         git_metadata = get_git_metadata()
-        # if git_metadata["dirty"]:
-        #     logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
-        #     exit(1)
+        if git_metadata["dirty"]:
+            logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
+            exit(1)
 
         if git_metadata["branch"] != "main":
             logger.error(f"Current branch is '{git_metadata['branch']}', expected 'main'. Please switch to 'main' before launching experiments.")

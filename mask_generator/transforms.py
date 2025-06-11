@@ -43,11 +43,10 @@ class ResizeWithAspectRatio(DualTransform):
         return ("height",)
 
 class AlbumentationsTrainTransform(BaseTransform):
-    def __init__(self, seed: int, pad_divisor: int, image_size: tuple[int, int] = (256, 256), to_tensor: bool = False, augmentations_names = None):
+    def __init__(self, seed: int, pad_divisor: int, image_size: tuple[int, int] = (256, 256), augmentations_names = None):
         self.seed = seed
         self.pad_divisor = pad_divisor
         self.image_size = image_size
-        self.to_tensor = to_tensor
         self.augmentation_factory = AugmentationFactory(seed)
         self.augmentations = augmentations_names or []
 
@@ -58,11 +57,9 @@ class AlbumentationsTrainTransform(BaseTransform):
             *self.augmentation_factory.build(self.augmentations),
             A.Normalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225],
-                        max_pixel_value=255.0)
+                        max_pixel_value=255.0),
+            ToTensorV2()
         ]
-
-        if self.to_tensor:
-            compose.append(ToTensorV2())
 
         transform = A.Compose(compose, seed=self.seed)
         if mask is None:
@@ -71,9 +68,8 @@ class AlbumentationsTrainTransform(BaseTransform):
         return res['image'], res['mask'].unsqueeze(0).float()
 
 class AlbumentationsInferTransform:
-    def __init__(self, pad_divisor: int, to_tensor: bool = False):
+    def __init__(self, pad_divisor: int):
         self.pad_divisor = pad_divisor
-        self.to_tensor = to_tensor
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [
@@ -81,11 +77,9 @@ class AlbumentationsInferTransform:
             A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=self.pad_divisor, pad_width_divisor=self.pad_divisor),
             A.Normalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225],
-                        max_pixel_value=255.0)
+                        max_pixel_value=255.0),
+            ToTensorV2()
         ]
-
-        if self.to_tensor:
-            compose.append(ToTensorV2())
 
         transform = A.Compose(compose)
         if mask is None:

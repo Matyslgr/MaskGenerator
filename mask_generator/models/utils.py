@@ -51,7 +51,7 @@ from mask_generator.models.my_unet import MyUNet
 
 #     return model, pad_divisor
 
-def create_model(model_config: ModelConfig) -> nn.Module:
+def create_model(model_config: ModelConfig):
     """Create a segmentation model based on the provided configuration.
 
     Args:
