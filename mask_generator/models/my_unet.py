@@ -10,9 +10,10 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 import torch.quantization as tq
 from collections import OrderedDict
+import warnings
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
+    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
         super().__init__()
         layers = []
         self.modules_names = []
@@ -27,7 +28,7 @@ class ConvBlock(nn.Module):
 
             layers.append((conv_name, nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=padding, bias=False)))
             layers.append((bn_name, nn.BatchNorm2d(out_channels)))
-            layers.append((relu_name, nn.ReLU(inplace=True)))
+            layers.append((relu_name, nn.ReLU(inplace=inplace)))
 
             self.modules_names.append((conv_name, bn_name, relu_name))
 
@@ -52,9 +53,9 @@ class ConvBlock(nn.Module):
                 raise ValueError(f"Cannot fuse {conv_name}, {bn_name}, {relu_name} - one of the modules is missing.")
 
 class EncoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
+    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
         super().__init__()
-        self.conv = ConvBlock(in_channels, out_channels, n_convs, padding, dropout)
+        self.conv = ConvBlock(in_channels, out_channels, n_convs, padding, dropout, inplace)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):
@@ -67,16 +68,14 @@ class EncoderBlock(nn.Module):
         # Note: Pooling layers are not fused, as they do not have learnable parameters.
 
 class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0):
+    def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
         super().__init__()
         self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
-        self.conv = ConvBlock(in_channels, out_channels, n_convs, padding, dropout)
+        self.conv = ConvBlock(in_channels, out_channels, n_convs, padding, dropout, inplace)
 
     def forward(self, x, skip):
         x = self.up(x)
-        if x.shape[2:] != skip.shape[2:]:
-            print(f"Resizing: {x.shape[2:]} to {skip.shape[2:]}")
-            x = TF.resize(x, size=skip.shape[2:])
+        x = nn.functional.interpolate(x, size=skip.shape[2:], mode='bilinear', align_corners=False)
         x = torch.cat((skip, x), dim=1)
         return self.conv(x)
 
@@ -85,7 +84,7 @@ class DecoderBlock(nn.Module):
         # Note: Transpose convolution layers are not fused, as they do not have learnable parameters.
 
 class MyUNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False):
+    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False, inplace=False):
         super().__init__()
 
         self.quantize = quantize
@@ -100,16 +99,16 @@ class MyUNet(nn.Module):
         # --- Encoder blocks
         input_channels = in_channels
         for f in filters:
-            self.encoders.append(EncoderBlock(input_channels, f, n_convs=n_convs, dropout=dropout))
+            self.encoders.append(EncoderBlock(input_channels, f, n_convs=n_convs, dropout=dropout, inplace=inplace))
             input_channels = f
 
         # --- Bottleneck
-        self.bottleneck = ConvBlock(filters[-1], filters[-1]*2, n_convs=n_convs, dropout=dropout)
+        self.bottleneck = ConvBlock(filters[-1], filters[-1]*2, n_convs=n_convs, dropout=dropout, inplace=inplace)
         # --- Decoder blocks (reverse)
         rev_num_filters = filters[::-1]
         input_channels = filters[-1]*2
         for f in rev_num_filters:
-            self.decoders.append(DecoderBlock(input_channels, f, n_convs=n_convs, dropout=dropout))
+            self.decoders.append(DecoderBlock(input_channels, f, n_convs=n_convs, dropout=dropout, inplace=inplace))
             input_channels = f
 
         self.final_conv = nn.Conv2d(filters[0], out_channels, kernel_size=1)
@@ -121,7 +120,15 @@ class MyUNet(nn.Module):
         div = 2 ** len(self.encoders)
 
         if h % div != 0 or w % div != 0:
-            raise ValueError(f"Input size ({h}, {w}) must be divisible by {div}")
+            new_h = ((h + div - 1) // div) * div
+            new_w = ((w + div - 1) // div) * div
+            warnings.warn(
+                f"Input size ({h}, {w}) is not divisible by {div}. "
+                "Resizing input to ({new_h}, {new_w}) for compatibility.",
+                "Consider preprocessing inputs accordingly.",
+                UserWarning
+            )
+            x = nn.functional.interpolate(x, size=(new_h, new_w), mode='bilinear', align_corners=False)
 
         skips = []
         for encoder in self.encoders:
