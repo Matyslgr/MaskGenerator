@@ -62,8 +62,7 @@ class Trainer():
             augmentations_names=config.training.augmentations,
         )
         self.infer_transform = KorniaInferTransform(
-            pad_divisor=pad_divisor,
-            device=self.device_str
+            pad_divisor=pad_divisor
         )
 
         if config.training.use_amp:
@@ -243,12 +242,13 @@ class Trainer():
                 self.tracker.log_epoch(epoch, lr, elapsed, train_metrics, val_metrics)
 
                 scheduler.step()
-                early_stopping(epoch, val_metrics["loss"], model)
+                early_stopping(epoch, val_metrics.loss, model)
 
                 pbar.set_postfix({
-                    "Train Loss": f"{train_metrics['loss']:.4f}",
-                    "Val Loss": f"{val_metrics['loss']:.4f}",
-                    "Best": f"{early_stopping.best_loss:.4f}",
+                    "Train Loss": f"{train_metrics.loss:.4f}",
+                    "Val Loss": f"{val_metrics.loss:.4f}",
+                    "Best Val Loss": f"{early_stopping.best_loss:.4f}",
+                    "Val Dice": f"{val_metrics.dice:.4f}"
                 })
 
                 torch.cuda.empty_cache()

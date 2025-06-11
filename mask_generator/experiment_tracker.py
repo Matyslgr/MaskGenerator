@@ -54,7 +54,7 @@ class ExperimentTracker:
             'epoch_time': epoch_time
         }
         for loader, metrics in zip(['train', 'val'], [train_metrics, val_metrics]):
-            for metric_name, value in ['loss', 'dice', 'iou', 'acc', 'precision', 'recall', 'f1']:
+            for metric_name in ['loss', 'dice', 'iou', 'acc', 'precision', 'recall', 'f1']:
                 data[f'{loader}_{metric_name}'] = getattr(metrics, metric_name, 0.0)
 
         self._append_csv(data)

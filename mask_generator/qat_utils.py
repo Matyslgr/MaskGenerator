@@ -7,7 +7,26 @@
 
 import torch
 import torch.quantization as tq
+from torch.ao.quantization.observer import MinMaxObserver
 from mask_generator.models.my_unet import MyUNet
+
+def get_default_qat_qconfig(backend="fbgemm") -> tq.QConfig:
+    """
+    Returns the default QConfig for Quantization Aware Training (QAT).
+    Args:
+        backend (str): The quantization backend to use. Default is "fbgemm".
+        Returns:
+        tq.QConfig: The default QConfig for QAT.
+    """
+    activation_observer = MinMaxObserver.with_args(
+        quant_min=0, quant_max=255, dtype=torch.quint8,
+        qscheme=torch.per_tensor_affine
+    )
+    weight_observer = MinMaxObserver.with_args(
+        quant_min=-128, quant_max=127, dtype=torch.qint8,
+        qscheme=torch.per_tensor_symmetric
+    )
+    return tq.QConfig(activation=activation_observer, weight=weight_observer)
 
 def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     """
@@ -25,7 +44,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model.eval()
     model.fuse_model()
     model.train()
-    model.qconfig = tq.get_default_qat_qconfig(backend)
+    model.qconfig = get_default_qat_qconfig(backend)
     tq.prepare_qat(model, inplace=True)
     return model
 
