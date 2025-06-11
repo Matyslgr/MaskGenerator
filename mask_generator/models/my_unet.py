@@ -85,6 +85,8 @@ class MyUNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False, inplace=False):
         super().__init__()
 
+        self.quantize = quantize
+
         if quantize:
             self.quant = tq.QuantStub()
             self.dequant = tq.DeQuantStub()
