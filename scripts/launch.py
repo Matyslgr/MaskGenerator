@@ -91,7 +91,6 @@ def run_already_exists(run_hash: str) -> bool:
                 settings.config_filename,
                 settings.metrics_filename,
                 settings.results_filename,
-                settings.onnx_filename,
             ]
             if all(os.path.exists(os.path.join(run_dir_path, f)) for f in expected_files):
                 return True
@@ -172,8 +171,8 @@ def main():
             logger.error(f"Git repository is dirty (uncommitted changes). Run {run_hash} may not be reproducible.")
             exit(1)
 
-        if git_metadata["branch"] != "main":
-            logger.error(f"Current branch is '{git_metadata['branch']}', expected 'main'. Please switch to 'main' before launching experiments.")
+        if git_metadata["branch"] != "main" and git_metadata["branch"] != "detached":
+            logger.error(f"Current branch is '{git_metadata['branch']}', expected 'main' or 'detached'. Please switch to 'main' before launching experiments.")
             exit(1)
 
         run_dir = format_run_dir(run_hash)
