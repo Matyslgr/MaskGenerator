@@ -125,7 +125,7 @@ def main():
         "eval_dataset_path": [os.path.join(settings.test_dataset_dir, "MoLane")],
         "seed": [i + 42 for i in range(1)],
         "batch_size": [32],
-        "num_epochs": [100],
+        "num_epochs": [1],
         "lr": [0.001],
         "step_size": [10],
         "gamma": [0.1],
