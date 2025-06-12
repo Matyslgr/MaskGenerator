@@ -8,14 +8,31 @@
 import copy
 import torch
 import logging
-from torch.ao.quantization import (
-    get_default_qat_qconfig_mapping,
-)
+import torch.ao.quantization as tq
 import torch.ao.quantization.quantize_fx as quantize_fx
 import mask_generator.settings as settings
 from mask_generator.models.my_unet import MyUNet
 
 logger = logging.getLogger(settings.logger_name)
+
+def get_custom_qconfig() -> QConfig:
+    """
+    Returns a custom QConfig for Quantization Aware Training (QAT).
+    Args:
+        backend (str): The quantization backend to use. Default is "fbgemm".
+    Returns:
+        QConfig: The custom QConfig for the specified backend.
+    """
+    if backend not in ["fbgemm", "qnnpack"]:
+        raise ValueError("Unsupported backend. Use 'fbgemm' or 'qnnpack'.")
+
+    weight_observer = tq.
+    return QConfig(
+        activation=torch.ao.quantization.MinMaxObserver.with_args(dtype=torch.quint8),
+        weight=torch.ao.quantization.default_per_channel_weight_observer,
+        qscheme=torch.per_tensor_affine,
+        reduce_range=False
+    )
 
 def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     """
@@ -37,6 +54,8 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model_to_quantize.fuse_model()
     model_to_quantize.train()
 
+
+
     qconfig_mapping = get_default_qat_qconfig_mapping(backend)
 
     example_inputs = (torch.randn(1, 3, 256, 256),)
@@ -45,27 +64,27 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model_prepared
 
-# def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModule:
-#     """
-#     Converts a Quantization Aware Training (QAT) model to a quantized model.
-#     Args:
-#         model (torch.fx.GraphModule): The QAT model to convert.
-#     Returns:
-#         torch.fx.GraphModule: The quantized model.
-#     """
-#     if not isinstance(model, torch.fx.GraphModule):
-#         raise TypeError("model must be an instance of torch.fx.GraphModule")
+def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModule:
+    """
+    Converts a Quantization Aware Training (QAT) model to a quantized model.
+    Args:
+        model (torch.fx.GraphModule): The QAT model to convert.
+    Returns:
+        torch.fx.GraphModule: The quantized model.
+    """
+    if not isinstance(model, torch.fx.GraphModule):
+        raise TypeError("model must be an instance of torch.fx.GraphModule")
 
-#     model.eval()
+    model.eval()
 
-#     # Check if the model is on cpu
-#     if next(model.parameters()).device.type != 'cpu':
-#         device = torch.device("cpu")
-#         model.to(device)
+    # Check if the model is on cpu
+    if next(model.parameters()).device.type != 'cpu':
+        device = torch.device("cpu")
+        model.to(device)
 
-#     quantized_model = quantize_fx.convert_fx(model)
-#     logger.info("Converted QAT model to quantized model")
-#     return quantized_model
+    quantized_model = quantize_fx.convert_fx(model)
+    logger.info("Converted QAT model to quantized model")
+    return quantized_model
 
 def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
     """
@@ -99,3 +118,10 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         training=torch.onnx.TrainingMode.EVAL,
     )
     logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")
+
+    import onnx
+
+    onnx_model = onnx.load(onnx_path)
+    for node in onnx_model.graph.node:
+        if node.op_type == "QuantizeLinear":
+            print(node)
