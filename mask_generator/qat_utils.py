@@ -10,8 +10,8 @@ import logging
 import torch.quantization as tq
 from torch.ao.quantization import FakeQuantize
 from torch.ao.quantization.observer import MovingAverageMinMaxObserver
-from mask_generator.models.my_unet import MyUNet
 import mask_generator.settings as settings
+from mask_generator.models.my_unet import MyUNet
 
 logger = logging.getLogger(settings.logger_name)
 

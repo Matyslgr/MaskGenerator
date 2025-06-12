@@ -11,8 +11,6 @@ import torchvision.transforms.functional as TF
 import torch.quantization as tq
 from collections import OrderedDict
 
-from mask_generator.qat_utils import create_activation_fake_quant
-
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
         super().__init__()
@@ -88,6 +86,7 @@ class MyUNet(nn.Module):
         super().__init__()
 
         self.quantize = quantize
+        from mask_generator.qat_utils import create_activation_fake_quant
 
         self.input_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
         self.encoder_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
