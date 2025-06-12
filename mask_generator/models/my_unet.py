@@ -86,12 +86,6 @@ class MyUNet(nn.Module):
         super().__init__()
 
         self.quantize = quantize
-        from mask_generator.qat_utils import create_activation_fake_quant
-
-        self.input_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
-        self.encoder_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
-        self.decoder_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
-        self.output_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
 
         self.quant = tq.QuantStub() if quantize else nn.Identity()
         self.dequant = tq.DeQuantStub() if quantize else nn.Identity()
@@ -118,12 +112,10 @@ class MyUNet(nn.Module):
 
     def forward(self, x):
         x = self.quant(x)
-        x = self.input_fake_quant(x)
 
         skips = []
         for encoder in self.encoders:
             x, skip = encoder(x)
-            skip = self.encoder_fake_quant(skip)
             skips.append(skip)
 
         x = self.bottleneck(x)
@@ -131,11 +123,9 @@ class MyUNet(nn.Module):
 
         for idx, decoder in enumerate(self.decoders):
             x = decoder(x, skips[idx])
-            x = self.decoder_fake_quant(x)
 
         x = self.final_conv(x)
 
-        x = self.output_fake_quant(x)
         x = self.dequant(x)
 
         return x

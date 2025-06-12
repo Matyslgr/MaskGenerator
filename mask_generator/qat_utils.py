@@ -5,9 +5,15 @@
 ## qat_utils
 ##
 
+import copy
 import torch
 import logging
-import torch.quantization as tq
+from torch.ao.quantization import (
+    get_default_qconfig_mapping,
+    get_default_qat_qconfig_mapping,
+    QConfigMapping
+)
+import torch.ao.quantization.quantize_fx as quantize_fx
 from torch.ao.quantization import FakeQuantize
 from torch.ao.quantization.observer import MovingAverageMinMaxObserver
 import mask_generator.settings as settings
@@ -39,16 +45,19 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
 
     torch.backends.quantized.engine = backend
 
-    model.eval()
-    model.fuse_model()
-    model.train()
-    model.qconfig = tq.get_default_qat_qconfig(backend)
-    logger.info(f"QConfig activation: {model.qconfig.activation}")
-    logger.info(f"QConfig weight: {model.qconfig.weight}")
+    model_to_quantize = copy.deepcopy(model)
 
-    tq.prepare_qat(model, inplace=True)
+    model_to_quantize.eval()
+    model_to_quantize.fuse_model()
+    model_to_quantize.train()
+
+    qconfig_mapping = get_default_qat_qconfig_mapping(backend)
+
+    example_inputs = (torch.randn(1, 3, 256, 256),)
+    model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
+
     logger.info(f"Model prepared for QAT with backend: {backend}")
-    return model
+    return model_prepared
 
 def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
     """
@@ -62,7 +71,7 @@ def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
         raise TypeError("model must be an instance of MyUNet")
 
     model.eval()
-    quantized_model = tq.convert(model, inplace=False, use_precomputed_fake_quant=True)
+    quantized_model = quantize_fx.convert_fx(model)
     logger.info("Converted QAT model to quantized model")
     return quantized_model
 
