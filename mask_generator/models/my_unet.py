@@ -6,6 +6,7 @@
 ##
 
 import torch
+import torch.ao.quantization
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 import torch.quantization as tq
@@ -47,7 +48,11 @@ class ConvBlock(nn.Module):
         """
         for conv_name, bn_name, relu_name in self.modules_names:
             if hasattr(self.block, conv_name) and hasattr(self.block, bn_name) and hasattr(self.block, relu_name):
-                torch.quantization.fuse_modules(self.block, [conv_name, bn_name, relu_name], inplace=True)
+                torch.ao.quantization.fuse_modules(
+                    self.block,
+                    [conv_name, bn_name, relu_name],
+                    inplace=True
+                )
             else:
                 raise ValueError(f"Cannot fuse {conv_name}, {bn_name}, {relu_name} - one of the modules is missing.")
 
