@@ -85,7 +85,7 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
 
     print("\nOperations dans le graph :")
     model.graph.print_tabular()
-    
+
     return quantized_model
 
 def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
@@ -98,8 +98,6 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
     """
     model.eval()
     device = torch.device("cpu")
-
-    print(list(model.parameters()))
 
     # Check if the model is on cpu
     if next(model.parameters()).device.type != 'cpu':
