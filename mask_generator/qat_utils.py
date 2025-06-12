@@ -54,6 +54,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
 
+    print(model_prepared.qconfig)
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model_prepared
 
@@ -89,6 +90,8 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
     """
     model.eval()
     device = torch.device("cpu")
+
+    print(list(model.parameters()))
 
     # Check if the model is on cpu
     if next(model.parameters()).device.type != 'cpu':
