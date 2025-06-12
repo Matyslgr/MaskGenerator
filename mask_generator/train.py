@@ -78,10 +78,7 @@ def main():
 
     if config.training.qat:
         model = convert_qat_to_quantized(model)
-<<<<<<< HEAD
-=======
 
->>>>>>> 9d98e286acdbbb933c0bc54c7fc2afef456deea2
     input_shape = (1, 3, config.training.train_image_size[0], config.training.train_image_size[1])
     export_to_onnx(model, os.path.join(config.other.run_dir, settings.onnx_filename), input_shape=input_shape)
 
