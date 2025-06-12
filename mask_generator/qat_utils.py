@@ -9,27 +9,13 @@ import copy
 import torch
 import logging
 from torch.ao.quantization import (
-    get_default_qconfig_mapping,
     get_default_qat_qconfig_mapping,
-    QConfigMapping
 )
 import torch.ao.quantization.quantize_fx as quantize_fx
-from torch.ao.quantization import FakeQuantize
-from torch.ao.quantization.observer import MovingAverageMinMaxObserver
 import mask_generator.settings as settings
 from mask_generator.models.my_unet import MyUNet
 
 logger = logging.getLogger(settings.logger_name)
-
-def create_activation_fake_quant():
-    return FakeQuantize(
-        observer=MovingAverageMinMaxObserver,
-        quant_min=0,
-        quant_max=255,
-        dtype=torch.quint8,
-        qscheme=torch.per_tensor_affine,
-        reduce_range=False
-    )
 
 def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     """
@@ -97,7 +83,7 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         quantized_model,
         dummy_input,
         f=onnx_path,
-        opset_version=11,
+        opset_version=13,
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
