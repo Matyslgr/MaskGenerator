@@ -59,32 +59,32 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model_prepared
 
-def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
+def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModule:
     """
     Converts a Quantization Aware Training (QAT) model to a quantized model.
     Args:
-        model (MyUNet): The QAT model to convert.
+        model (torch.fx.GraphModule): The QAT model to convert.
     Returns:
-        MyUNet: The quantized model.
+        torch.fx.GraphModule: The quantized model.
     """
-    if not isinstance(model, MyUNet):
-        raise TypeError("model must be an instance of MyUNet")
+    if not isinstance(model, torch.fx.GraphModule):
+        raise TypeError("model must be an instance of torch.fx.GraphModule")
 
     model.eval()
     quantized_model = quantize_fx.convert_fx(model)
     logger.info("Converted QAT model to quantized model")
     return quantized_model
 
-def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
+def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
     """
     Exports the model to ONNX format.
     Args:
-        model (MyUNet): The model to export.
+        model (torch.fx.GraphModule): The model to export.
         onnx_path (str): The path where the ONNX model will be saved.
         input_shape (tuple): The shape of the input tensor. Default is (1, 3, 256, 256).
     """
-    if not isinstance(model, MyUNet):
-        raise TypeError("model must be an instance of MyUNet")
+    if not isinstance(model, torch.fx.GraphModule):
+        raise TypeError("model must be an instance of torch.fx.GraphModule")
     device = torch.device("cpu")
 
     model.to(device)
