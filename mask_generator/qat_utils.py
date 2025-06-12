@@ -49,7 +49,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model_to_quantize.fuse_model()
     model_to_quantize.train()
 
-    qconfig_mapping = get_default_qconfig_mapping(backend)
+    qconfig_mapping = get_default_qconfig_mapping()
 
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
