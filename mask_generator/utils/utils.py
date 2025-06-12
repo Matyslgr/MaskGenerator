@@ -17,7 +17,7 @@ def set_deterministic_behavior(seed):
     Args:
         seed (int): The seed value for random number generators.
     """
-    torch.use_deterministic_algorithms(True)
+    torch.use_deterministic_algorithms(True, warn_only=True)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
