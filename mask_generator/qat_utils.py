@@ -51,10 +51,11 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
 
     qconfig_mapping = tq.get_default_qconfig_mapping(backend)
 
+    print("QConfigMapping global:", qconfig_mapping.global_qconfig)
+
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
 
-    print(model_prepared.qconfig)
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model_prepared
 
