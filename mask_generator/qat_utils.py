@@ -49,7 +49,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model_to_quantize.fuse_model()
     model_to_quantize.train()
 
-    qconfig_mapping = get_default_qconfig_mapping()
+    qconfig_mapping = get_default_qconfig_mapping(backend)
 
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
@@ -111,3 +111,10 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         training=torch.onnx.TrainingMode.EVAL,
     )
     logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")
+
+    import onnx
+
+    onnx_model = onnx.load(onnx_path)
+    for node in onnx_model.graph.node:
+        if node.op_type == "QuantizeLinear":
+            print(node)
