@@ -80,11 +80,8 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
     quantized_model = quantize_fx.convert_fx(model)
     logger.info("Converted QAT model to quantized model")
 
-    for name, module in model.named_modules():
+    for name, module in quantized_model.named_modules():
         print(f"Module: {name}, Type: {module.__class__.__name__}")
-
-    print("\nOperations dans le graph :")
-    model.graph.print_tabular()
 
     return quantized_model
 
