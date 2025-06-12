@@ -17,7 +17,7 @@ logger = logging.getLogger(settings.logger_name)
 def get_default_qat_qconfig() -> tq.QConfig:
     """
     Returns the default QConfig for Quantization Aware Training (QAT).
-    
+
         Returns:
         tq.QConfig: The default QConfig for QAT.
     """
@@ -64,7 +64,7 @@ def convert_qat_to_quantized(model: MyUNet) -> MyUNet:
         raise TypeError("model must be an instance of MyUNet")
 
     model.eval()
-    quantized_model = tq.convert(model, inplace=False)
+    quantized_model = tq.convert(model, inplace=False, use_precomputed_fake_quant=True)
     logger.info("Converted QAT model to quantized model")
     return quantized_model
 
@@ -86,19 +86,18 @@ def export_to_onnx(model: MyUNet, onnx_path: str, input_shape: tuple = (1, 3, 25
 
     dummy_input = torch.randn(*input_shape, device=device)
 
-    export_kwargs = {
-        "model": quantized_model,
-        "args": dummy_input,
-        "f": onnx_path,
-        "opset_version": 11,
-        "do_constant_folding": True,
-        "input_names": ["input"],
-        "output_names": ["output"],
-        "dynamic_axes": {
+    torch.onnx.export(
+        quantized_model,
+        dummy_input,
+        f=onnx_path,
+        opset_version=11,
+        do_constant_folding=True,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={
             "input": {0: "batch_size", 2: "height", 3: "width"},
             "output": {0: "batch_size", 2: "height", 3: "width"}
-        }
-    }
-
-    torch.onnx.export(**export_kwargs)
+        },
+        training=torch.onnx.TrainingMode.EVAL,
+    )
     logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")
