@@ -83,6 +83,9 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
     for name, module in quantized_model.named_modules():
         print(f"Module: {name}, Type: {module.__class__.__name__}")
 
+    print("\nOperations dans le graph :")
+    quantized_model.graph.print_tabular()
+
     return quantized_model
 
 def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
