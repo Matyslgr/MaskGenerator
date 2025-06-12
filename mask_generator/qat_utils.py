@@ -45,21 +45,27 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     logger.info(f"Model prepared for QAT with backend: {backend}")
     return model_prepared
 
-def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModule:
-    """
-    Converts a Quantization Aware Training (QAT) model to a quantized model.
-    Args:
-        model (torch.fx.GraphModule): The QAT model to convert.
-    Returns:
-        torch.fx.GraphModule: The quantized model.
-    """
-    if not isinstance(model, torch.fx.GraphModule):
-        raise TypeError("model must be an instance of torch.fx.GraphModule")
+# def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModule:
+#     """
+#     Converts a Quantization Aware Training (QAT) model to a quantized model.
+#     Args:
+#         model (torch.fx.GraphModule): The QAT model to convert.
+#     Returns:
+#         torch.fx.GraphModule: The quantized model.
+#     """
+#     if not isinstance(model, torch.fx.GraphModule):
+#         raise TypeError("model must be an instance of torch.fx.GraphModule")
 
-    model.eval()
-    quantized_model = quantize_fx.convert_fx(model)
-    logger.info("Converted QAT model to quantized model")
-    return quantized_model
+#     model.eval()
+
+#     # Check if the model is on cpu
+#     if next(model.parameters()).device.type != 'cpu':
+#         device = torch.device("cpu")
+#         model.to(device)
+
+#     quantized_model = quantize_fx.convert_fx(model)
+#     logger.info("Converted QAT model to quantized model")
+#     return quantized_model
 
 def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
     """
@@ -69,18 +75,17 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         onnx_path (str): The path where the ONNX model will be saved.
         input_shape (tuple): The shape of the input tensor. Default is (1, 3, 256, 256).
     """
-    if not isinstance(model, torch.fx.GraphModule):
-        raise TypeError("model must be an instance of torch.fx.GraphModule")
+    model.eval()
     device = torch.device("cpu")
 
-    model.to(device)
-
-    quantized_model = convert_qat_to_quantized(model)
+    # Check if the model is on cpu
+    if next(model.parameters()).device.type != 'cpu':
+        model.to(device)
 
     dummy_input = torch.randn(*input_shape, device=device)
 
     torch.onnx.export(
-        quantized_model,
+        model,
         dummy_input,
         f=onnx_path,
         opset_version=13,
