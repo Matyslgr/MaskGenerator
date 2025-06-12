@@ -11,6 +11,8 @@ import torchvision.transforms.functional as TF
 import torch.quantization as tq
 from collections import OrderedDict
 
+from mask_generator.qat_utils import create_activation_fake_quant
+
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
         super().__init__()
@@ -87,9 +89,13 @@ class MyUNet(nn.Module):
 
         self.quantize = quantize
 
-        if quantize:
-            self.quant = tq.QuantStub()
-            self.dequant = tq.DeQuantStub()
+        self.input_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
+        self.encoder_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
+        self.decoder_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
+        self.output_fake_quant = create_activation_fake_quant() if quantize else nn.Identity()
+
+        self.quant = tq.QuantStub() if quantize else nn.Identity()
+        self.dequant = tq.DeQuantStub() if quantize else nn.Identity()
 
         self.encoders = nn.ModuleList()
         self.decoders = nn.ModuleList()
@@ -112,12 +118,13 @@ class MyUNet(nn.Module):
         self.final_conv = nn.Conv2d(filters[0], out_channels, kernel_size=1)
 
     def forward(self, x):
-        if self.quantize:
-            x = self.quant(x)
+        x = self.quant(x)
+        x = self.input_fake_quant(x)
 
         skips = []
         for encoder in self.encoders:
             x, skip = encoder(x)
+            skip = self.encoder_fake_quant(skip)
             skips.append(skip)
 
         x = self.bottleneck(x)
@@ -125,11 +132,12 @@ class MyUNet(nn.Module):
 
         for idx, decoder in enumerate(self.decoders):
             x = decoder(x, skips[idx])
+            x = self.decoder_fake_quant(x)
 
         x = self.final_conv(x)
 
-        if self.quantize:
-            x = self.dequant(x)
+        x = self.output_fake_quant(x)
+        x = self.dequant(x)
 
         return x
 
