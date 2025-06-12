@@ -15,19 +15,19 @@ from mask_generator.models.my_unet import MyUNet
 
 logger = logging.getLogger(settings.logger_name)
 
-def get_default_qconfig_mapping() -> tq.QConfigMapping:
-    """
-    Returns the default QConfigMapping for Quantization Aware Training (QAT).
-    This mapping is used to specify how different layers in the model should be quantized.
-    """
-    weight_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
-    activation_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
-    qconfig = tq.QConfig(
-        activation=activation_observer,
-        weight=weight_observer
-    )
+# def get_custom_qconfig_mapping() -> tq.QConfigMapping:
+#     """
+#     Returns the default QConfigMapping for Quantization Aware Training (QAT).
+#     This mapping is used to specify how different layers in the model should be quantized.
+#     """
+#     weight_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
+#     activation_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
+#     qconfig = tq.QConfig(
+#         activation=activation_observer,
+#         weight=weight_observer
+#     )
 
-    return tq.QConfigMapping().set_global(qconfig)
+#     return tq.QConfigMapping().set_global(qconfig)
 
 def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     """
@@ -49,7 +49,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model_to_quantize.fuse_model()
     model_to_quantize.train()
 
-    qconfig_mapping = get_default_qconfig_mapping()
+    qconfig_mapping = tq.get_default_qconfig_mapping(backend)
 
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
