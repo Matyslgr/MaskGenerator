@@ -77,7 +77,9 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
         device = torch.device("cpu")
         model.to(device)
 
-    quantized_model = quantize_fx.convert_fx(model)
+    qconfig_mapping = get_custom_qconfig_mapping()
+
+    quantized_model = quantize_fx.convert_fx(model, qconfig_mapping=qconfig_mapping)
     logger.info("Converted QAT model to quantized model")
 
     for name, module in quantized_model.named_modules():

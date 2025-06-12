@@ -47,14 +47,11 @@ class ConvBlock(nn.Module):
         Fuses the Conv2d, BatchNorm2d, and ReLU layers for quantization.
         """
         for conv_name, bn_name, relu_name in self.modules_names:
-            if hasattr(self.block, conv_name) and hasattr(self.block, bn_name) and hasattr(self.block, relu_name):
-                torch.ao.quantization.fuse_modules(
-                    self.block,
-                    [conv_name, bn_name, relu_name],
-                    inplace=True
-                )
-            else:
-                raise ValueError(f"Cannot fuse {conv_name}, {bn_name}, {relu_name} - one of the modules is missing.")
+            torch.ao.quantization.fuse_modules(
+                self.block,
+                [conv_name, bn_name, relu_name],
+                inplace=True
+            )
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_convs=2, padding=1, dropout=0.0, inplace=False):
