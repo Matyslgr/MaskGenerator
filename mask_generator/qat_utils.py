@@ -111,10 +111,3 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         training=torch.onnx.TrainingMode.EVAL,
     )
     logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")
-
-    import onnx
-
-    onnx_model = onnx.load(onnx_path)
-    for node in onnx_model.graph.node:
-        if node.op_type == "QuantizeLinear":
-            print(node)
