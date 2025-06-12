@@ -17,7 +17,7 @@ from mask_generator.trainer import Trainer
 import mask_generator.settings as settings
 from mask_generator.logger import setup_logging
 from mask_generator.models.utils import create_model
-from mask_generator.qat_utils import prepare_qat_model, export_to_onnx
+from mask_generator.qat_utils import prepare_qat_model, convert_qat_to_quantized, export_to_onnx
 from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
 
 def parse_args():
@@ -76,6 +76,8 @@ def main():
     trainer = Trainer(config, pad_divisor)
     model = trainer.fit(model, train_pairs, test_pairs)
 
+    if config.training.qat:
+        model = convert_qat_to_quantized(model)
     input_shape = (1, 3, config.training.train_image_size[0], config.training.train_image_size[1])
     export_to_onnx(model, os.path.join(config.other.run_dir, settings.onnx_filename), input_shape=input_shape)
 

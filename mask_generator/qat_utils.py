@@ -8,14 +8,26 @@
 import copy
 import torch
 import logging
-from torch.ao.quantization import (
-    get_default_qat_qconfig_mapping,
-)
+import torch.ao.quantization as tq
 import torch.ao.quantization.quantize_fx as quantize_fx
 import mask_generator.settings as settings
 from mask_generator.models.my_unet import MyUNet
 
 logger = logging.getLogger(settings.logger_name)
+
+def get_default_qconfig_mapping() -> tq.QConfigMapping:
+    """
+    Returns the default QConfigMapping for Quantization Aware Training (QAT).
+    This mapping is used to specify how different layers in the model should be quantized.
+    """
+    weight_observer = tq.PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
+    activation_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
+    qconfig = tq.QConfig(
+        activation=activation_observer,
+        weight=weight_observer
+    )
+
+    return tq.QConfigMapping().set_global(qconfig)
 
 def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     """
@@ -37,7 +49,7 @@ def prepare_qat_model(model: MyUNet, backend: str = "fbgemm") -> MyUNet:
     model_to_quantize.fuse_model()
     model_to_quantize.train()
 
-    qconfig_mapping = get_default_qat_qconfig_mapping(backend)
+    qconfig_mapping = get_default_qconfig_mapping()
 
     example_inputs = (torch.randn(1, 3, 256, 256),)
     model_prepared = quantize_fx.prepare_qat_fx(model_to_quantize, qconfig_mapping, example_inputs)
@@ -57,6 +69,12 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
         raise TypeError("model must be an instance of torch.fx.GraphModule")
 
     model.eval()
+
+    # Check if the model is on cpu
+    if next(model.parameters()).device.type != 'cpu':
+        device = torch.device("cpu")
+        model.to(device)
+
     quantized_model = quantize_fx.convert_fx(model)
     logger.info("Converted QAT model to quantized model")
     return quantized_model
@@ -69,18 +87,17 @@ def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tup
         onnx_path (str): The path where the ONNX model will be saved.
         input_shape (tuple): The shape of the input tensor. Default is (1, 3, 256, 256).
     """
-    if not isinstance(model, torch.fx.GraphModule):
-        raise TypeError("model must be an instance of torch.fx.GraphModule")
+    model.eval()
     device = torch.device("cpu")
 
-    model.to(device)
-
-    quantized_model = convert_qat_to_quantized(model)
+    # Check if the model is on cpu
+    if next(model.parameters()).device.type != 'cpu':
+        model.to(device)
 
     dummy_input = torch.randn(*input_shape, device=device)
 
     torch.onnx.export(
-        quantized_model,
+        model,
         dummy_input,
         f=onnx_path,
         opset_version=13,
