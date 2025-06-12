@@ -20,7 +20,7 @@ def get_default_qconfig_mapping() -> tq.QConfigMapping:
     Returns the default QConfigMapping for Quantization Aware Training (QAT).
     This mapping is used to specify how different layers in the model should be quantized.
     """
-    weight_observer = tq.PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric)
+    weight_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
     activation_observer = tq.MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
     qconfig = tq.QConfig(
         activation=activation_observer,
