@@ -85,11 +85,6 @@ class MyUNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False, inplace=False):
         super().__init__()
 
-        self.quantize = quantize
-
-        self.quant = tq.QuantStub() if quantize else nn.Identity()
-        self.dequant = tq.DeQuantStub() if quantize else nn.Identity()
-
         self.encoders = nn.ModuleList()
         self.decoders = nn.ModuleList()
 
@@ -111,8 +106,6 @@ class MyUNet(nn.Module):
         self.final_conv = nn.Conv2d(filters[0], out_channels, kernel_size=1)
 
     def forward(self, x):
-        x = self.quant(x)
-
         skips = []
         for encoder in self.encoders:
             x, skip = encoder(x)
@@ -125,8 +118,6 @@ class MyUNet(nn.Module):
             x = decoder(x, skips[idx])
 
         x = self.final_conv(x)
-
-        x = self.dequant(x)
 
         return x
 
