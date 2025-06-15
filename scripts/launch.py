@@ -120,9 +120,9 @@ def main():
         "dropout": [0.0],
     }
 
-    qat_args = {
-        "enabled": [False],
-    }
+    qat_args = [
+        {"enabled": [False]}
+    ]
 
     training_args = {
         "train_dataset_path": [os.path.join(settings.train_dataset_dir, "simu_v0")],
