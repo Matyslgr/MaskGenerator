@@ -129,7 +129,7 @@ def main():
         "eval_dataset_path": [os.path.join(settings.test_dataset_dir, "MoLane")],
         "seed": [i + 42 for i in range(1)],
         "batch_size": [32],
-        "num_epochs": [1],
+        "num_epochs": [100],
         "lr": [0.001],
         "step_size": [10],
         "gamma": [0.1],
@@ -137,8 +137,8 @@ def main():
         "delta": [0.0],
         "train_image_size": [[256, 256]],
         "augmentations": augmentations,
-        "weighted_loss": [True],
-        "use_amp": [False],
+        "weighted_loss": [False],
+        "use_amp": [True],
         "qat": qat_args,
     }
 
