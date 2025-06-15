@@ -121,7 +121,7 @@ def main():
     }
 
     qat_args = [
-        {"enabled": [False]}
+        {"enabled": False}
     ]
 
     training_args = {
