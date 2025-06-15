@@ -66,7 +66,6 @@ def create_model(model_config: ModelConfig):
         filters=model_config.filters,
         n_convs=model_config.n_convs,
         dropout=model_config.dropout,
-        quantize=model_config.quantize
     )
     if not isinstance(model, nn.Module):
         raise TypeError(f"Model must be an instance of nn.Module, got {type(model)}")

@@ -15,7 +15,11 @@ class ModelConfig:
     filters: List[int] = field(default_factory=lambda: [32, 64, 128, 256])
     n_convs: int = 2
     dropout: float = 0.0
-    quantize: bool = False
+
+@dataclass
+class QATConfig:
+    enabled: bool = False
+    backend: str = "fbgemm"
 
 @dataclass
 class TrainingConfig:
@@ -33,8 +37,7 @@ class TrainingConfig:
     augmentations: List[str] = field(default_factory=lambda: [])
     weighted_loss: bool = True
     use_amp: bool = False
-    qat: bool = False
-    qat_backend: str = "fbgemm"
+    qat: QATConfig = field(default_factory=QATConfig)
 
 @dataclass
 class OtherConfig:

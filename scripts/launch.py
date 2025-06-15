@@ -118,7 +118,11 @@ def main():
         "n_convs": [2],
         "filters": [[32, 64, 128, 256]],
         "dropout": [0.0],
-        "quantize": [True],
+        "quantize": [False],
+    }
+
+    qat_args = {
+        "enabled": [False],
     }
 
     training_args = {
@@ -136,7 +140,7 @@ def main():
         "augmentations": augmentations,
         "weighted_loss": [True],
         "use_amp": [False],
-        "qat": [True],
+        "qat": qat_args,
     }
 
     other_args = {

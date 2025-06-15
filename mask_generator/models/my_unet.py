@@ -8,8 +8,6 @@
 import torch
 import torch.ao.quantization
 import torch.nn as nn
-import torchvision.transforms.functional as TF
-import torch.quantization as tq
 from collections import OrderedDict
 
 class ConvBlock(nn.Module):
@@ -84,7 +82,7 @@ class DecoderBlock(nn.Module):
         # Note: Transpose convolution layers are not fused, as they do not have learnable parameters.
 
 class MyUNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, quantize=False, inplace=False):
+    def __init__(self, in_channels=3, out_channels=1, filters=[32, 64, 128, 256], n_convs=2, dropout=0.0, inplace=False):
         super().__init__()
 
         self.encoders = nn.ModuleList()
