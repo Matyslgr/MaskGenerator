@@ -118,7 +118,6 @@ def main():
         "n_convs": [2],
         "filters": [[32, 64, 128, 256]],
         "dropout": [0.0],
-        "quantize": [False],
     }
 
     qat_args = {
