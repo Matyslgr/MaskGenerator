@@ -212,6 +212,7 @@ class Trainer():
             if "bce" in config.name.lower() and config.params["pos_weight"]:
                 # If BCE with weights, compute the positive weight
                 pos_weight = compute_pos_weight(train_loader, device=self.device_str)
+                print(f"Computed positive weight: {pos_weight.item()}")
                 config.params["pos_weight"] = pos_weight
 
             loss_fn = LossFactory.create(config)

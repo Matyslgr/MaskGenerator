@@ -49,6 +49,7 @@ class AlbumentationsTrainTransform(BaseTransform):
         self.image_size = image_size
         self.augmentation_factory = AugmentationFactory(seed)
         self.augmentations = augmentations_names or []
+        print(f"Using augmentations: {self.augmentations}")
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [

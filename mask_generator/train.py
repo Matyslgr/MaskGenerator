@@ -42,7 +42,6 @@ def prepare_pairs(config: Config) -> Tuple[np.ndarray, np.ndarray]:
 def main():
     args = parse_args()
 
-
     try:
         run_cfg = OmegaConf.load(args.config)
 
