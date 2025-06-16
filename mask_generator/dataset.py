@@ -42,4 +42,5 @@ class ImageMaskDataset(Dataset):
         plt.title("Transformed Image")
         plt.axis('off')
         plt.savefig("transformed_image.png")
+        stop()
         return image, mask
