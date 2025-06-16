@@ -68,7 +68,12 @@ def dict_product(d: dict):
 
 def recursive_product(d: dict):
     groups = d.keys()
-    groups_product = {g: list(dict_product(d[g])) for g in groups}
+    groups_product = {}
+    for g in groups:
+        if isinstance(d[g], list) and all(isinstance(item, dict) for item in d[g]):
+            groups_product[g] = d[g]
+        else:
+            groups_product[g] = list(dict_product(d[g]))
 
     for combined in itertools.product(*groups_product.values()):
         yield dict(zip(groups, combined))
