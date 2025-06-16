@@ -10,16 +10,21 @@ from typing import List, Tuple
 
 @dataclass
 class ModelConfig:
+    arch: str = "my_unet"
     in_channels: int = 3
     out_channels: int = 1
-    filters: List[int] = field(default_factory=lambda: [32, 64, 128, 256])
-    n_convs: int = 2
-    dropout: float = 0.0
+    model_args: dict = field(default_factory=lambda: {})
 
 @dataclass
 class QATConfig:
     enabled: bool = False
     backend: str = "fbgemm"
+
+@dataclass
+class LossConfig:
+    name: str = "bce"
+    weight: List[float] = field(default_factory=lambda: [1.0])
+    params: dict = field(default_factory=lambda: {})
 
 @dataclass
 class TrainingConfig:
@@ -38,6 +43,7 @@ class TrainingConfig:
     weighted_loss: bool = True
     use_amp: bool = False
     qat: QATConfig = field(default_factory=QATConfig)
+    loss: List[LossConfig] = field(default_factory=lambda: [LossConfig(name="bce", weight=[1.0])])
 
 @dataclass
 class OtherConfig:

@@ -114,14 +114,61 @@ def main():
         POSSIBLES_AUGMENTATIONS
     ]
 
-    model_args = {
-        "n_convs": [2],
-        "filters": [[32, 64, 128, 256]],
-        "dropout": [0.0],
-    }
+    model_args = [
+        # {
+        #     "arch": "my_unet",
+        #     "model_args": {
+        #         "n_convs": 2,
+        #         "filters": [32, 64, 128, 256],
+        #         "dropout": 0.0
+        #     }
+        # },
+        {
+            "arch": "Unet++",
+            "model_args": {
+                "encoder_name": "resnet18",
+                "encoder_weights": "imagenet"
+            }
+        },
+        {
+            "arch": "Unet++",
+            "model_args": {
+                "encoder_name": "resnet34",
+                "encoder_weights": "imagenet"
+            }
+        }
+    ]
 
     qat_args = [
         {"enabled": False}
+    ]
+
+    loss_args = [
+        # [
+        #     {
+        #         "name": "bce",
+        #         "weight": [1.0],
+        #         "params": {
+        #             "weighted": True
+        #         }
+        #     }
+        # ],
+        [
+            {
+                "name": "bce",
+                "weight": [0.5],
+                "params": {
+                    "weighted": True
+                }
+            },
+            {
+                "name": "dice",
+                "weight": [0.5],
+                "params": {
+                    "smooth": 1.0
+                }
+            }
+        ]
     ]
 
     training_args = {
@@ -137,9 +184,9 @@ def main():
         "delta": [0.0],
         "train_image_size": [[256, 256]],
         "augmentations": augmentations,
-        "weighted_loss": [False],
         "use_amp": [True],
         "qat": qat_args,
+        "loss": loss_args,
     }
 
     other_args = {

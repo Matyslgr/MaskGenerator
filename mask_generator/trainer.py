@@ -16,18 +16,20 @@ from torchmetrics.classification import BinaryJaccardIndex, BinaryAccuracy, Bina
 from torch.amp import autocast, GradScaler
 from sklearn.metrics import confusion_matrix
 from typing import Tuple, Optional
+from typing import List
+from mask_generator.loss import LossFactory, CompositeLoss
 import torch.nn as nn
 
 from mask_generator.earlystopping import EarlyStopping
 from mask_generator.dataset import ImageMaskDataset
 from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 from mask_generator.utils import Timer
-from mask_generator.config import Config
+from mask_generator.config import Config, LossConfig
 import mask_generator.settings as settings
 from mask_generator.experiment_tracker import ExperimentTracker
 from mask_generator.metrics import Metrics
 
-def compute_pos_weight(loader):
+def compute_pos_weight(loader, device: str = 'cpu') -> torch.Tensor:
     total_pos = 0
     total_neg = 0
     for _, masks in loader:
@@ -36,7 +38,7 @@ def compute_pos_weight(loader):
         total_neg += (1 - masks).sum().item()
 
     print(f"Total positive pixels: {total_pos}, Total negative pixels: {total_neg}")
-    return torch.tensor(total_neg / total_pos)
+    return torch.tensor(total_neg / total_pos).to(device)
 
 class Trainer():
     def __init__(self, config: Config, pad_divisor: int):
@@ -196,6 +198,28 @@ class Trainer():
 
         return metrics, cm
 
+    def build_loss(self, loss_configs: List[LossConfig], train_loader: DataLoader) -> nn.Module:
+        """
+        Build a composite loss function from a list of loss configurations.
+        Args:
+            loss_configs (List[LossConfig]): List of loss configurations.
+        Returns:
+            nn.Module: The composite loss function.
+        """
+        losses_with_weights = []
+        for config in loss_configs:
+
+            if "bce" in config.name.lower() and config.params["weighted"]:
+                # If BCE with weights, compute the positive weight
+                pos_weight = compute_pos_weight(train_loader, device=self.device_str)
+                config.params["pos_weight"] = pos_weight
+
+            loss_fn = LossFactory.create(config)
+            weight = config.weight
+            losses_with_weights.append((config.name, loss_fn, weight))
+
+        return CompositeLoss(losses_with_weights).to(self.device)
+
     def fit(self, model: nn.Module, train_pairs, test_pairs) -> nn.Module:
         model = model.to(self.device)
         val_size = int(len(test_pairs) * 0.2)
@@ -204,13 +228,7 @@ class Trainer():
 
         train_loader, val_loader, test_loader = self._prepare_loaders(train_pairs, val_pairs, test_pairs)
 
-        if self.config.training.weighted_loss:
-            pos_weight = torch.tensor(31.568326950073242).to(self.device)
-            # pos_weight = compute_pos_weight(train_loader).to(self.device)
-            # print(f"Computed positive weight: {pos_weight.item()}")
-        else:
-            pos_weight = None
-        criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        criterion = self.build_loss(self.config.training.loss, train_loader)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.config.training.lr)
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer=optimizer,
