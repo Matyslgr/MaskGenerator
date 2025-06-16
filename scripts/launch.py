@@ -129,14 +129,14 @@ def main():
         #     }
         # },
         {
-            "arch": "Unet++",
+            "arch": "unetplusplus",
             "model_args": {
                 "encoder_name": "resnet18",
                 "encoder_weights": "imagenet"
             }
         },
         {
-            "arch": "Unet++",
+            "arch": "unetplusplus",
             "model_args": {
                 "encoder_name": "resnet34",
                 "encoder_weights": "imagenet"
