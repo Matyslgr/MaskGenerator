@@ -49,15 +49,22 @@ class AlbumentationsTrainTransform(BaseTransform):
         self.image_size = image_size
         self.augmentation_factory = AugmentationFactory(seed)
         self.augmentations = augmentations_names or []
+        self.mean = [0.485, 0.456, 0.406]
+        self.std = [0.229, 0.224, 0.225]
+
         print(f"Using augmentations: {self.augmentations}")
+
+    def denormalize(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Inverse normalization of a tensor."""
+        return tensor * torch.tensor(self.std).view(3, 1, 1) + torch.tensor(self.mean).view(3, 1, 1)
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [
             A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=self.pad_divisor, pad_width_divisor=self.pad_divisor),
             A.RandomCrop(height=self.image_size[0], width=self.image_size[1]),
             *self.augmentation_factory.build(self.augmentations),
-            A.Normalize(mean=[0.485, 0.456, 0.406],
-                        std=[0.229, 0.224, 0.225],
+            A.Normalize(mean=self.mean,
+                        std=self.std,
                         max_pixel_value=255.0),
             ToTensorV2()
         ]
