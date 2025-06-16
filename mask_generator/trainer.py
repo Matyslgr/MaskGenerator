@@ -111,7 +111,7 @@ class Trainer():
             if self.config.training.use_amp:
                 with autocast(device_type='cuda', dtype=torch.float16):
                     outputs = model(images)
-                    loss = criterion(outputs, masks)
+                    loss, loss_dict = criterion(outputs, masks)
 
                 # Use mixed precision training
                 self.scaler.scale(loss).backward()
@@ -119,7 +119,7 @@ class Trainer():
                 self.scaler.update()
             else:
                 outputs = model(images)
-                loss = criterion(outputs, masks)
+                loss, loss_dict = criterion(outputs, masks)
                 loss.backward()
                 optimizer.step()
 
@@ -166,7 +166,7 @@ class Trainer():
 
                 preds = (torch.sigmoid(outputs) > 0.5).float()
 
-                loss = criterion(outputs, masks)
+                loss, loss_dict = criterion(outputs, masks)
                 total_loss += loss.item()
 
                 self.dice_metric(preds, masks)
