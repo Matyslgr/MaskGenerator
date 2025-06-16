@@ -163,7 +163,7 @@ def main():
                 "name": "bce",
                 "weight": [0.5],
                 "params": {
-                    "weighted": True
+                    "pos_weight": True
                 }
             },
             {

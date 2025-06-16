@@ -40,7 +40,6 @@ class TrainingConfig:
     delta: float = 0.0
     train_image_size: Tuple[int, int] = (256, 256)
     augmentations: List[str] = field(default_factory=lambda: [])
-    weighted_loss: bool = True
     use_amp: bool = False
     qat: QATConfig = field(default_factory=QATConfig)
     loss: List[LossConfig] = field(default_factory=lambda: [LossConfig(name="bce", weight=[1.0])])

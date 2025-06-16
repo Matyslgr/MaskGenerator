@@ -209,7 +209,7 @@ class Trainer():
         losses_with_weights = []
         for config in loss_configs:
 
-            if "bce" in config.name.lower() and config.params["weighted"]:
+            if "bce" in config.name.lower() and config.params["pos_weight"]:
                 # If BCE with weights, compute the positive weight
                 pos_weight = compute_pos_weight(train_loader, device=self.device_str)
                 config.params["pos_weight"] = pos_weight
