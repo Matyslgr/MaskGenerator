@@ -10,7 +10,6 @@ import numpy as np
 from torch.utils.data import Dataset
 import cv2
 from mask_generator.transforms import BaseTransform
-import matplotlib.pyplot as plt
 
 class ImageMaskDataset(Dataset):
     def __init__(self, pairs_path: np.ndarray, transform: BaseTransform):
@@ -38,17 +37,4 @@ class ImageMaskDataset(Dataset):
         if len(unique) != 2 or not torch.all((unique == 0) | (unique == 1)):
             raise ValueError(f"Expected binary mask with classes 0 and 1, found: {unique}")
 
-        plt.figure(figsize=(10, 5))
-        plt.subplot(1, 2, 1)
-        plt.imshow(image.permute(1, 2, 0).numpy())
-        plt.title("Transformed Image")
-        plt.axis('off')
-        plt.subplot(1, 2, 2)
-        plt.imshow(mask.numpy(), cmap='gray')
-        plt.title("Transformed Mask")
-        plt.axis('off')
-        plt.savefig(f"transformed_{idx}.png")
-        plt.close()
-
-        stop()
         return image, mask

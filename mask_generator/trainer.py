@@ -19,6 +19,8 @@ from typing import Tuple, Optional
 from typing import List
 from mask_generator.loss import LossFactory, CompositeLoss
 import torch.nn as nn
+import matplotlib.pyplot as plt
+
 
 from mask_generator.earlystopping import EarlyStopping
 from mask_generator.dataset import ImageMaskDataset
@@ -161,6 +163,19 @@ class Trainer():
 
         with torch.no_grad():
             for images, masks in tqdm(loader, desc="  Eval", leave=False):
+
+                plt.figure(figsize=(10, 5))
+                plt.subplot(1, 2, 1)
+                plt.imshow(self.infer_transform.to_image(images[0]))
+                plt.title("Input Image")
+                plt.axis('off')
+                plt.subplot(1, 2, 2)
+                plt.imshow(self.infer_transform.to_mask(masks[0]))
+                plt.title("Ground Truth Mask")
+                plt.axis('off')
+                plt.savefig(os.path.join(self.config.other.run_dir, 'eval_sample.png'))
+                plt.close()
+                stop()
                 images, masks = images.to(self.device), masks.to(self.device)
                 outputs = model(images)
 
