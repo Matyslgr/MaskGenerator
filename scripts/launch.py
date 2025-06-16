@@ -120,14 +120,14 @@ def main():
     ]
 
     model_args = [
-        # {
-        #     "arch": "my_unet",
-        #     "model_args": {
-        #         "n_convs": 2,
-        #         "filters": [32, 64, 128, 256],
-        #         "dropout": 0.0
-        #     }
-        # },
+        {
+            "arch": "my_unet",
+            "model_args": {
+                "n_convs": 2,
+                "filters": [32, 64, 128, 256],
+                "dropout": 0.0
+            }
+        },
         {
             "arch": "unetplusplus",
             "model_args": {
@@ -149,15 +149,15 @@ def main():
     ]
 
     loss_args = [
-        # [
-        #     {
-        #         "name": "bce",
-        #         "weight": [1.0],
-        #         "params": {
-        #             "pos_weight": True
-        #         }
-        #     }
-        # ],
+        [
+            {
+                "name": "bce",
+                "weight": [1.0],
+                "params": {
+                    "pos_weight": True
+                }
+            }
+        ],
         [
             {
                 "name": "bce",
