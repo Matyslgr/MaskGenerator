@@ -42,7 +42,7 @@ class TrainingConfig:
     augmentations: List[str] = field(default_factory=lambda: [])
     use_amp: bool = False
     qat: QATConfig = field(default_factory=QATConfig)
-    loss: List[LossConfig] = field(default_factory=lambda: [LossConfig(name="bce", weight=[1.0])])
+    loss: List[LossConfig] = field(default_factory=lambda: [LossConfig()])
 
 @dataclass
 class OtherConfig:
