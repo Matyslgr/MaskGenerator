@@ -23,7 +23,7 @@ class QATConfig:
 @dataclass
 class LossConfig:
     name: str = "bce"
-    weight: List[float] = field(default_factory=lambda: [1.0])
+    weight: float = 1.0
     params: dict = field(default_factory=lambda: {})
 
 @dataclass

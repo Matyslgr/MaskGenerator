@@ -161,14 +161,14 @@ def main():
         [
             {
                 "name": "bce",
-                "weight": [0.5],
+                "weight": 0.5,
                 "params": {
                     "pos_weight": True
                 }
             },
             {
                 "name": "dice",
-                "weight": [0.5],
+                "weight": 0.5,
                 "params": {
                     "smooth": 1.0
                 }
