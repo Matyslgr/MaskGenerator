@@ -133,6 +133,14 @@ def main():
             "model_args": {
                 "encoder_name": "mobilenet_v2",
                 "encoder_weights": "imagenet",
+                "activation": None
+            }
+        },
+        {
+            "arch": "unet",
+            "model_args": {
+                "encoder_name": "mobilenet_v2",
+                "encoder_weights": "imagenet",
                 "decoder_attention_type": "scse",
                 "activation": None
             }
@@ -194,7 +202,39 @@ def main():
                     "smooth": 1.0
                 }
             }
-        ]
+        ],
+        [
+            {
+                "name": "bce",
+                "weight": 0.3,
+                "params": {
+                    "pos_weight": True
+                }
+            },
+            {
+                "name": "dice",
+                "weight": 0.7,
+                "params": {
+                    "smooth": 1.0
+                }
+            }
+        ],
+        [
+            {
+                "name": "bce",
+                "weight": 0.15,
+                "params": {
+                    "pos_weight": True
+                }
+            },
+            {
+                "name": "dice",
+                "weight": 0.85,
+                "params": {
+                    "smooth": 1.0
+                }
+            }
+        ],
     ]
 
     training_args = {
