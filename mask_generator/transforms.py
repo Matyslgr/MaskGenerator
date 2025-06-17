@@ -54,9 +54,10 @@ class AlbumentationsTrainTransform(BaseTransform):
 
         print(f"Using augmentations: {self.augmentations}")
 
-    def denormalize(self, tensor: torch.Tensor) -> torch.Tensor:
-        """Inverse normalization of a tensor."""
-        return tensor * torch.tensor(self.std).view(3, 1, 1) + torch.tensor(self.mean).view(3, 1, 1)
+    def denormalize(self, image: np.ndarray) -> np.ndarray:
+        """Denormalize the image."""
+        image = image * np.array(self.std) + np.array(self.mean)
+        return np.clip(image, 0, 1) * 255.0
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [

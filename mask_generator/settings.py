@@ -8,8 +8,8 @@
 import os
 
 # Directories
-# root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-root = "/root/MaskGenerator"
+root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# root = "/root/MaskGenerator"
 experiment_dir = os.path.join(root, "experiments")
 train_dataset_dir = os.path.join(root, "Datasets", "train")
 test_dataset_dir = os.path.join(root, "Datasets", "test")

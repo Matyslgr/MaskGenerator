@@ -87,11 +87,11 @@ class Trainer():
             "pin_memory_device": self.device_str if self.device_str == 'cuda' else ""
         }
 
-        return (
-            DataLoader(train_ds, shuffle=True, **kwargs),
-            DataLoader(val_ds, shuffle=False, **kwargs),
-            DataLoader(test_ds, shuffle=False, **kwargs)
-        )
+        train_loader = DataLoader(train_ds, shuffle=True, **kwargs)
+        val_loader = DataLoader(val_ds, shuffle=False, **kwargs)
+        test_loader = DataLoader(test_ds, shuffle=False, **kwargs)
+
+        return train_loader, val_loader, test_loader
 
     def _train_epoch(self, model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, criterion: nn.Module) -> Metrics:
         model.train()
