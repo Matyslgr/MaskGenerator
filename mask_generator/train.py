@@ -6,6 +6,7 @@
 ##
 
 import os
+import yaml
 import logging
 import argparse
 import numpy as np
@@ -39,6 +40,13 @@ def prepare_pairs(config: Config) -> Tuple[np.ndarray, np.ndarray]:
 
     return train_pairs, test_pairs
 
+def save_metadata(run_dir: str, pad_divisor: int):
+    metadata_path = os.path.join(run_dir, "metadata.yaml")
+    metadata = {"pad_divisor": pad_divisor}
+
+    with open(metadata_path, "w") as f:
+        yaml.dump(metadata, f, default_flow_style=False)
+
 def main():
     args = parse_args()
 
@@ -69,6 +77,8 @@ def main():
     model, pad_divisor = create_model(config.model)
     logger.info(f"Model created with pad_divisor: {pad_divisor}")
 
+    save_metadata(config.other.run_dir, pad_divisor)
+    logger.info(f"Saved pad_divisor to metadata.yaml")
     if config.training.qat.enabled:
         model = prepare_qat_model(model, config.training.qat.backend)
 

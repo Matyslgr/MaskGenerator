@@ -43,21 +43,19 @@ class ResizeWithAspectRatio(DualTransform):
         return ("height",)
 
 class AlbumentationsTrainTransform(BaseTransform):
-    def __init__(self, seed: int, pad_divisor: int, image_size: tuple[int, int] = (256, 256), augmentations_names = None):
-        self.seed = seed
+    def __init__(self, pad_divisor: int, image_size: tuple[int, int] = (256, 256), augmentations_names = None):
         self.pad_divisor = pad_divisor
         self.image_size = image_size
-        self.augmentation_factory = AugmentationFactory(seed)
+        self.augmentation_factory = AugmentationFactory()
         self.augmentations = augmentations_names or []
-        self.mean = [0.485, 0.456, 0.406]
-        self.std = [0.229, 0.224, 0.225]
+        self.mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
+        self.std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
 
         print(f"Using augmentations: {self.augmentations}")
 
-    def denormalize(self, image: np.ndarray) -> np.ndarray:
-        """Denormalize the image."""
-        image = image * np.array(self.std) + np.array(self.mean)
-        return np.clip(image, 0, 1) * 255.0
+    def denormalize(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Inverse normalization of a tensor."""
+        return tensor * self.std + self.mean
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [
@@ -70,7 +68,7 @@ class AlbumentationsTrainTransform(BaseTransform):
             ToTensorV2()
         ]
 
-        transform = A.Compose(compose, seed=self.seed)
+        transform = A.Compose(compose)
         if mask is None:
             return transform(image=image)['image']
         res = transform(image=image, mask=mask)

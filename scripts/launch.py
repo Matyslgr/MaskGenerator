@@ -129,17 +129,47 @@ def main():
             }
         },
         {
-            "arch": "unetplusplus",
+            "arch": "unet",
             "model_args": {
-                "encoder_name": "resnet18",
-                "encoder_weights": "imagenet"
+                "encoder_name": "mobilenet_v2",
+                "encoder_weights": "imagenet",
+                "decoder_attention_type": "scse",
+                "activation": None
             }
         },
         {
-            "arch": "unetplusplus",
+            "arch": "unet",
             "model_args": {
-                "encoder_name": "resnet34",
-                "encoder_weights": "imagenet"
+                "encoder_name": "efficientnet-b0",
+                "encoder_weights": "imagenet",
+                "decoder_attention_type": "scse",
+                "activation": None
+            }
+        },
+        {
+            "arch": "fpn",
+            "model_args": {
+                "encoder_name": "mobilenet_v2",
+                "encoder_weights": "imagenet",
+                "decoder_attention_type": "scse",
+                "activation": None
+            }
+        },
+        {
+            "arch": "linknet",
+            "model_args": {
+                "encoder_name": "resnet18",
+                "encoder_weights": "imagenet",
+                "decoder_attention_type": "scse",
+                "activation": None
+            }
+        },
+        {
+            "arch": "deep_lab_v3",
+            "model_args": {
+                "encoder_name": "mobilenet_v2",
+                "encoder_weights": "imagenet",
+                "activation": None
             }
         }
     ]
@@ -149,15 +179,6 @@ def main():
     ]
 
     loss_args = [
-        [
-            {
-                "name": "bce",
-                "weight": 1.0,
-                "params": {
-                    "pos_weight": True
-                }
-            }
-        ],
         [
             {
                 "name": "bce",

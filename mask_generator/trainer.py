@@ -60,7 +60,6 @@ class Trainer():
         self.tracker = ExperimentTracker(config.other.run_dir)
 
         self.train_transform = AlbumentationsTrainTransform(
-            seed=config.training.seed,
             pad_divisor=pad_divisor,
             image_size=config.training.train_image_size,
             augmentations_names=config.training.augmentations,

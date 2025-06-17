@@ -48,8 +48,7 @@ class DropoutTransform:
         return self.transform
 
 class GeometryTransform:
-    def __init__(self, seed):
-        self._seed = seed
+    def __init__(self):
         self.transform = A.Compose([
             A.HorizontalFlip(p=0.5),
             A.Affine(
@@ -60,7 +59,7 @@ class GeometryTransform:
                 p=0.4
             ),
             A.Perspective(scale=(0.02, 0.05), p=0.3),
-        ], p=0.7, seed=self._seed)
+        ], p=0.7)
 
     def __call__(self):
         return self.transform
@@ -102,13 +101,12 @@ class WeatherTransform:
         return self.transform
 
 class AugmentationFactory:
-    def __init__(self, seed):
-        self.seed = seed
+    def __init__(self):
         self.transformations = {
             "blur": BlurTransform(),
             "noise": NoiseTransform(),
             "dropout": DropoutTransform(),
-            "geometry": GeometryTransform(seed=self.seed),
+            "geometry": GeometryTransform(),
             "color_invariance": ColorInvarianceTransform(),
             "color_variation": ColorVariationTransform(),
             "weather": WeatherTransform(),
