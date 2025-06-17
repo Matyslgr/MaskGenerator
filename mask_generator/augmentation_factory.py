@@ -120,4 +120,4 @@ class AugmentationFactory:
             else:
                 raise ValueError(f"Unknown augmentation: {name}")
 
-        return A.Compose(transforms, seed=self.seed)
+        return A.Compose(transforms)
