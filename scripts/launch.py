@@ -203,38 +203,38 @@ def main():
                 }
             }
         ],
-        [
-            {
-                "name": "bce",
-                "weight": 0.3,
-                "params": {
-                    "pos_weight": True
-                }
-            },
-            {
-                "name": "dice",
-                "weight": 0.7,
-                "params": {
-                    "smooth": 1.0
-                }
-            }
-        ],
-        [
-            {
-                "name": "bce",
-                "weight": 0.15,
-                "params": {
-                    "pos_weight": True
-                }
-            },
-            {
-                "name": "dice",
-                "weight": 0.85,
-                "params": {
-                    "smooth": 1.0
-                }
-            }
-        ],
+        # [
+        #     {
+        #         "name": "bce",
+        #         "weight": 0.3,
+        #         "params": {
+        #             "pos_weight": True
+        #         }
+        #     },
+        #     {
+        #         "name": "dice",
+        #         "weight": 0.7,
+        #         "params": {
+        #             "smooth": 1.0
+        #         }
+        #     }
+        # ],
+        # [
+        #     {
+        #         "name": "bce",
+        #         "weight": 0.15,
+        #         "params": {
+        #             "pos_weight": True
+        #         }
+        #     },
+        #     {
+        #         "name": "dice",
+        #         "weight": 0.85,
+        #         "params": {
+        #             "smooth": 1.0
+        #         }
+        #     }
+        # ],
     ]
 
     training_args = {
