@@ -20,7 +20,9 @@ from mask_generator.logger import setup_logging
 from mask_generator.models.utils import create_model
 from mask_generator.quantization_utils import prepare_qat_model, convert_qat_to_quantized, export_to_onnx
 from mask_generator.utils import set_deterministic_behavior, load_datasets
-from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
+from mask_generator.logger import setup_logging
+
+logger = setup_logging(__file__, level=logging.DEBUG)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
@@ -49,21 +51,21 @@ def main():
         config: Config = OmegaConf.to_object(cfg)
 
     except Exception as e:
-        print(f"[ERROR] Failed to load configuration: {e}")
+        logger.error(f"Failed to load configuration: {e}")
         return
 
     assert isinstance(config, Config), "Configuration must be an instance of Config class."
 
-    logger = setup_logging(settings.logger_name, log_file=os.path.join(config.other.run_dir, settings.logging_filename))
+    logger = setup_logging(settings.logger_name, level=logging.level.DEBUG, log_file=os.path.join(config.other.run_dir, settings.logging_filename))
 
     set_deterministic_behavior(config.training.seed)
-
 
     model, pad_divisor = create_model(config.model)
     logger.info(f"Model created with pad_divisor: {pad_divisor}")
 
     save_metadata(config.other.run_dir, pad_divisor)
     logger.info(f"Saved pad_divisor to metadata.yaml")
+
     if config.training.qat.enabled:
         model = prepare_qat_model(model, config.training.qat.backend)
 
@@ -71,6 +73,8 @@ def main():
         config=config,
         pad_divisor=pad_divisor
     )
+
+    logger.info(f"Loaded datasets: {len(train_dataset)} train samples, {len(val_dataset)} val samples, {len(test_dataset)} test samples")
 
     trainer = Trainer(config)
     model = trainer.fit(model, train_dataset, val_dataset, test_dataset)

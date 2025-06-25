@@ -6,6 +6,7 @@
 ##
 
 import cv2
+import logging
 import numpy as np
 import kornia.geometry.transform as kt
 import torch
@@ -14,6 +15,9 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from albumentations.core.transforms_interface import DualTransform
 from abc import ABC, abstractmethod
+from mask_generator.logger import setup_logging
+
+logger = setup_logging(__file__, level=logging.level.DEBUG)
 
 from mask_generator.augmentation_factory import AugmentationFactory
 
@@ -51,7 +55,7 @@ class AlbumentationsTrainTransform(BaseTransform):
         self.mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
         self.std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
 
-        print(f"Using augmentations: {self.augmentations}")
+        logger.debug(f"Using augmentations: {self.augmentations}")
 
     def denormalize(self, tensor: torch.Tensor) -> torch.Tensor:
         """Inverse normalization of a tensor."""
