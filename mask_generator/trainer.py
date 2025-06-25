@@ -49,7 +49,7 @@ class Trainer():
         self.config = config
         self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_str)
-        print(f"Using device: {self.device}")
+        logger.info(f"Using device: {self.device}")
 
         # Metrics
         self.dice_metric = DiceScore(num_classes=2, average='macro').to(self.device)
@@ -200,9 +200,10 @@ class Trainer():
         for config in loss_configs:
 
             if "bce" in config.name.lower() and config.params["pos_weight"]:
+                logger.debug(f"Computing positive weight for {config.name} loss")
                 # If BCE with weights, compute the positive weight
                 pos_weight = compute_pos_weight(train_loader, device=self.device_str)
-                print(f"Computed positive weight: {pos_weight.item()}")
+                logger.debug(f"Computed positive weight: {pos_weight.item()}")
                 config.params["pos_weight"] = pos_weight
 
             loss_fn = LossFactory.create(config)
@@ -234,7 +235,7 @@ class Trainer():
 
         model_path = os.path.join(self.config.other.run_dir, settings.model_filename)
         if os.path.exists(model_path):
-            print(f"Model {model_path} already exists. Skipping training.")
+            logger.warning(f"Model {model_path} already exists. Skipping training.")
             return None
 
         early_stopping = EarlyStopping(

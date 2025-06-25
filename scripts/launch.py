@@ -133,14 +133,14 @@ def main():
                 "dropout": 0.0
             }
         },
-        {
-            "arch": "my_unet",
-            "model_args": {
-                "n_convs": 2,
-                "filters": [32, 64, 128, 256, 512],
-                "dropout": 0.0
-            }
-        }
+        # {
+        #     "arch": "my_unet",
+        #     "model_args": {
+        #         "n_convs": 2,
+        #         "filters": [32, 64, 128, 256, 512],
+        #         "dropout": 0.0
+        #     }
+        # }
         # {
         #     "arch": "unet",
         #     "model_args": {
@@ -214,6 +214,20 @@ def main():
             {
                 "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
                 "augmentations": [],
+            }
+        ],
+        [
+            {
+                "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
+                "augmentations": POSSIBLES_AUGMENTATIONS,
+            },
+            {
+                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
+                "augmentations": POSSIBLES_AUGMENTATIONS,
+            },
+            {
+                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_train_source.csv"),
+                "augmentations": POSSIBLES_AUGMENTATIONS,
             }
         ]
     ]
