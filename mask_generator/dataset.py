@@ -26,10 +26,6 @@ class ImageMaskDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path, mask_path = self.pairs_path[idx]
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Image file '{image_path}' does not exist.")
-        if not os.path.exists(mask_path):
-            raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
 
         original_image = cv2.imread(image_path)
         original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
