@@ -67,19 +67,9 @@ def main():
     if config.training.qat.enabled:
         model = prepare_qat_model(model, config.training.qat.backend)
 
-    train_transform = AlbumentationsTrainTransform(
-        pad_divisor=pad_divisor,
-        image_size=config.training.train_image_size,
-        augmentations=config.training.augmentations
-    )
-    eval_transform = KorniaInferTransform(pad_divisor=pad_divisor)
-
     train_dataset, val_dataset, test_dataset = load_datasets(
-        train_dataset_configs=config.training.train_dataset,
-        eval_dataset_configs=config.training.eval_dataset,
-        seed=config.training.seed,
-        train_transform=train_transform,
-        eval_transform=eval_transform
+        config=config,
+        pad_divisor=pad_divisor
     )
 
     trainer = Trainer(config)

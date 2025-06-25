@@ -95,29 +95,26 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import List, Tuple
-from mask_generator.config import DatasetConfig, TrainDatasetConfig
+from mask_generator.config import Config
 from mask_generator.dataset import ImageMaskDataset
 from torch.utils.data import ConcatDataset
 from sklearn.model_selection import train_test_split
+from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 
-def load_datasets(train_dataset_configs: List[TrainDatasetConfig],
-                  eval_dataset_configs: List[DatasetConfig],
-                  seed: int, train_transform, eval_transform) -> Tuple[ImageMaskDataset, ImageMaskDataset, ImageMaskDataset]:
+def load_datasets(config: Config, pad_divisor: int) -> Tuple[ImageMaskDataset, ImageMaskDataset, ImageMaskDataset]:
+
     """
     Load training and evaluation datasets from the provided configurations.
     Args:
-        train_dataset_configs (List[TrainDatasetConfig]): List of training dataset configurations.
-        eval_dataset_configs (List[EvalDatasetConfig]): List of evaluation dataset configurations.
-        seed (int): Random seed for reproducibility.
-        train_transform: Transformations to apply to the training dataset.
-        eval_transform: Transformations to apply to the evaluation dataset.
+        config (Config): Configuration object containing dataset paths and transformations.
+        pad_divisor (int): Padding divisor for image dimensions.
     Returns:
         Tuple[ImageMaskDataset, ImageMaskDataset, ImageMaskDataset]: Training dataset, validation dataset, and test dataset.
     """
 
     train_datasets = []
 
-    for cfg in train_dataset_configs:
+    for cfg in config.training.train_dataset:
         if not os.path.exists(cfg.csv):
             raise FileNotFoundError(f"Train CSV '{cfg.csv}' not found.")
 
@@ -129,6 +126,11 @@ def load_datasets(train_dataset_configs: List[TrainDatasetConfig],
 
         logging.info(f"Loading {len(pairs_path)} pairs from train CSV '{cfg.csv}'.")
 
+        train_transform = AlbumentationsTrainTransform(
+            image_size=config.training.train_image_size,
+            pad_divisor=pad_divisor,
+            augmentations=cfg.augmentations
+        )
         dataset = ImageMaskDataset(pairs_path=pairs_path, transform=train_transform)
         train_datasets.append(dataset)
 
@@ -138,12 +140,12 @@ def load_datasets(train_dataset_configs: List[TrainDatasetConfig],
     train_dataset = ConcatDataset(train_datasets) if len(train_datasets) > 1 else train_datasets[0]
 
     # ===== Eval : split val/test =====
-    if not eval_dataset_configs:
+    if not config.training.eval_dataset:
         raise ValueError("At least one evaluation dataset must be provided.")
 
     all_eval_pairs = []
 
-    for cfg in eval_dataset_configs:
+    for cfg in config.training.eval_dataset:
         if not os.path.exists(cfg.csv):
             raise FileNotFoundError(f"Eval CSV '{cfg.csv}' not found.")
 
@@ -159,8 +161,9 @@ def load_datasets(train_dataset_configs: List[TrainDatasetConfig],
 
     all_eval_pairs = np.concatenate(all_eval_pairs, axis=0)
 
-    val_pairs, test_pairs = train_test_split(all_eval_pairs, test_size=0.8, random_state=seed, shuffle=True)
+    val_pairs, test_pairs = train_test_split(all_eval_pairs, test_size=0.8, random_state=config.training.seed, shuffle=True)
 
+    eval_transform = KorniaInferTransform(pad_divisor=pad_divisor)
     val_dataset = ImageMaskDataset(val_pairs, transform=eval_transform)
     test_dataset = ImageMaskDataset(test_pairs, transform=eval_transform)
 
