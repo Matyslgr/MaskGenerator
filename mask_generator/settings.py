@@ -11,12 +11,9 @@ import os
 # root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 root = "/root/MaskGenerator"
 experiment_dir = os.path.join(root, "experiments")
-train_dataset_dir = os.path.join(root, "Datasets", "train")
-test_dataset_dir = os.path.join(root, "Datasets", "test")
+dataset_dir = os.path.join(root, "Datasets")
 
 os.makedirs(experiment_dir, exist_ok=True)
-os.makedirs(train_dataset_dir, exist_ok=True)
-os.makedirs(test_dataset_dir, exist_ok=True)
 
 # Filenames
 model_filename = "model.pth"

@@ -27,9 +27,17 @@ class LossConfig:
     params: dict = field(default_factory=lambda: {})
 
 @dataclass
+class DatasetConfig:
+    csv: str
+
+@dataclass
+class TrainDatasetConfig(DatasetConfig):
+    augmentations: List[str] = field(default_factory=lambda: [])
+
+@dataclass
 class TrainingConfig:
-    train_dataset_path: str
-    eval_dataset_path: str
+    train_dataset: List[TrainDatasetConfig]
+    eval_dataset: List[DatasetConfig]
     seed: int = 42
     batch_size: int = 32
     num_epochs: int = 100

@@ -182,6 +182,27 @@ def main():
         }
     ]
 
+    train_dataset = [
+        [
+            {
+            "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
+            "augmentations": augmentations,
+            },
+            {
+                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
+                "augmentations": augmentations,
+            }
+        ]
+    ]
+
+    eval_dataset = [
+        [
+            {
+                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_test.csv"),
+            }
+        ]
+    ]
+
     qat_args = [
         {"enabled": False}
     ]
@@ -238,8 +259,8 @@ def main():
     ]
 
     training_args = {
-        "train_dataset_path": [os.path.join(settings.train_dataset_dir, "simu_v0")],
-        "eval_dataset_path": [os.path.join(settings.test_dataset_dir, "MoLane")],
+        "train_dataset": train_dataset,
+        "eval_dataset": eval_dataset,
         "seed": [i + 42 for i in range(1)],
         "batch_size": [32],
         "num_epochs": [100],

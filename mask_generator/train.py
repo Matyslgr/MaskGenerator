@@ -19,26 +19,14 @@ import mask_generator.settings as settings
 from mask_generator.logger import setup_logging
 from mask_generator.models.utils import create_model
 from mask_generator.quantization_utils import prepare_qat_model, convert_qat_to_quantized, export_to_onnx
-from mask_generator.utils import set_deterministic_behavior, DatasetLoaderFactory
+from mask_generator.utils import set_deterministic_behavior, load_datasets
+from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')
 
     parser.add_argument('--config', type=str, required=True, help='Path to config YAML file.')
     return parser.parse_args()
-
-def prepare_pairs(config: Config) -> Tuple[np.ndarray, np.ndarray]:
-    """Prepare training and testing pairs based on the configuration."""
-
-    train_pairs = DatasetLoaderFactory.get_loader(
-        config.training.train_dataset_path,
-    ).get_pairs()
-
-    test_pairs = DatasetLoaderFactory.get_loader(
-        config.training.eval_dataset_path,
-    ).get_pairs()
-
-    return train_pairs, test_pairs
 
 def save_metadata(run_dir: str, pad_divisor: int):
     metadata_path = os.path.join(run_dir, "metadata.yaml")
@@ -70,9 +58,6 @@ def main():
 
     set_deterministic_behavior(config.training.seed)
 
-    train_pairs, test_pairs = prepare_pairs(config)
-
-    logger.info(f"Loaded {len(train_pairs)} training pairs and {len(test_pairs)} testing pairs.")
 
     model, pad_divisor = create_model(config.model)
     logger.info(f"Model created with pad_divisor: {pad_divisor}")
@@ -82,8 +67,23 @@ def main():
     if config.training.qat.enabled:
         model = prepare_qat_model(model, config.training.qat.backend)
 
-    trainer = Trainer(config, pad_divisor)
-    model = trainer.fit(model, train_pairs, test_pairs)
+    train_transform = AlbumentationsTrainTransform(
+        pad_divisor=pad_divisor,
+        image_size=config.training.train_image_size,
+        augmentations=config.training.augmentations
+    )
+    eval_transform = KorniaInferTransform(pad_divisor=pad_divisor)
+
+    train_dataset, val_dataset, test_dataset = load_datasets(
+        train_dataset_configs=config.training.train_dataset,
+        eval_dataset_configs=config.training.eval_dataset,
+        seed=config.training.seed,
+        train_transform=train_transform,
+        eval_transform=eval_transform
+    )
+
+    trainer = Trainer(config)
+    model = trainer.fit(model, train_dataset, val_dataset, test_dataset)
 
     if config.training.qat.enabled:
         model = convert_qat_to_quantized(model)

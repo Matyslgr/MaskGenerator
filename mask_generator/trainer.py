@@ -43,7 +43,7 @@ def compute_pos_weight(loader, device: str = 'cpu') -> torch.Tensor:
     return torch.tensor(total_neg / total_pos).to(device)
 
 class Trainer():
-    def __init__(self, config: Config, pad_divisor: int):
+    def __init__(self, config: Config):
         self.config = config
         self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_str)
@@ -59,23 +59,10 @@ class Trainer():
 
         self.tracker = ExperimentTracker(config.other.run_dir)
 
-        self.train_transform = AlbumentationsTrainTransform(
-            pad_divisor=pad_divisor,
-            image_size=config.training.train_image_size,
-            augmentations_names=config.training.augmentations,
-        )
-        self.infer_transform = KorniaInferTransform(
-            pad_divisor=pad_divisor
-        )
-
         if config.training.use_amp:
             self.scaler = GradScaler()
 
-    def _prepare_loaders(self, train_pairs, val_pairs, test_pairs):
-
-        train_ds = ImageMaskDataset(train_pairs, transform=self.train_transform)
-        val_ds = ImageMaskDataset(val_pairs, transform=self.infer_transform)
-        test_ds = ImageMaskDataset(test_pairs, transform=self.infer_transform)
+    def _prepare_loaders(self, train_ds: ImageMaskDataset, val_ds: ImageMaskDataset, test_ds: ImageMaskDataset):
 
         kwargs = {
             "batch_size": self.config.training.batch_size,
@@ -222,13 +209,14 @@ class Trainer():
 
         return CompositeLoss(losses_with_weights).to(self.device)
 
-    def fit(self, model: nn.Module, train_pairs, test_pairs) -> nn.Module:
+    def fit(self, model: nn.Module, train_ds: ImageMaskDataset, val_ds: ImageMaskDataset, test_ds: ImageMaskDataset) -> Optional[nn.Module]:
         model = model.to(self.device)
-        val_size = int(len(test_pairs) * 0.2)
-        val_pairs = test_pairs[:val_size]
-        test_pairs = test_pairs[val_size:]
 
-        train_loader, val_loader, test_loader = self._prepare_loaders(train_pairs, val_pairs, test_pairs)
+        train_loader, val_loader, test_loader = self._prepare_loaders(
+            train_ds=train_ds,
+            val_ds=val_ds,
+            test_ds=test_ds
+        )
 
         criterion = self.build_loss(self.config.training.loss, train_loader)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.config.training.lr)
