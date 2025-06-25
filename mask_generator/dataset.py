@@ -8,15 +8,14 @@
 import os
 import cv2
 import torch
-from typing import List, Tuple
 import numpy as np
 from torch.utils.data import Dataset
 from mask_generator.transforms import BaseTransform
 
 class ImageMaskDataset(Dataset):
-    def __init__(self, pairs_path: List[Tuple], transform: BaseTransform):
-        if not isinstance(pairs_path, list) or not all(isinstance(pair, tuple) and len(pair) == 2 for pair in pairs_path):
-            raise TypeError(f"pairs_path must be a list of tuples, got {type(pairs_path)}")
+    def __init__(self, pairs_path: np.ndarray, transform: BaseTransform):
+        if not isinstance(pairs_path, np.ndarray):
+            raise TypeError(f"pairs_path must be a numpy array, got {type(pairs_path)}")
         if not isinstance(transform, BaseTransform):
             raise TypeError(f"transform must be an instance of BaseTransform, got {type(transform)}")
         self.pairs_path = pairs_path
