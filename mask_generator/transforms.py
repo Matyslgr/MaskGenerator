@@ -43,11 +43,11 @@ class ResizeWithAspectRatio(DualTransform):
         return ("height",)
 
 class AlbumentationsTrainTransform(BaseTransform):
-    def __init__(self, pad_divisor: int, image_size: tuple[int, int] = (256, 256), augmentations_names = None):
+    def __init__(self, pad_divisor: int, image_size: tuple[int, int] = (256, 256), augmentations = None):
         self.pad_divisor = pad_divisor
         self.image_size = image_size
         self.augmentation_factory = AugmentationFactory()
-        self.augmentations = augmentations_names or []
+        self.augmentations = augmentations or []
         self.mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
         self.std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
 
