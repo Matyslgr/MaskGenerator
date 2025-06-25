@@ -31,7 +31,7 @@ from mask_generator.experiment_tracker import ExperimentTracker
 from mask_generator.metrics import Metrics
 from mask_generator.logger import setup_logging
 
-logger = setup_logging(__file__, level=settings.logging_level)
+logger = setup_logging(__name__, level=settings.logging_level)
 
 def compute_pos_weight(loader, device: str = 'cpu') -> torch.Tensor:
     total_pos = 0

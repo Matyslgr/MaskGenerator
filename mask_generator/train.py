@@ -22,7 +22,7 @@ from mask_generator.quantization_utils import prepare_qat_model, convert_qat_to_
 from mask_generator.utils import set_deterministic_behavior, load_datasets
 from mask_generator.logger import setup_logging
 
-logger = setup_logging(__file__, level=logging.DEBUG)
+logger = setup_logging(__name__, level=logging.DEBUG)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script to train the model.')

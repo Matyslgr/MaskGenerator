@@ -17,7 +17,7 @@ from albumentations.core.transforms_interface import DualTransform
 from abc import ABC, abstractmethod
 from mask_generator.logger import setup_logging
 
-logger = setup_logging(__file__, level=logging.DEBUG)
+logger = setup_logging(__name__, level=logging.DEBUG)
 
 from mask_generator.augmentation_factory import AugmentationFactory
 
