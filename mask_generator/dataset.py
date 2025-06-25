@@ -40,5 +40,5 @@ class ImageMaskDataset(Dataset):
 
         unique = torch.unique(mask)
         if len(unique) != 2 or not torch.all((unique == 0) | (unique == 1)):
-            raise ValueError(f"Expected binary mask with classes 0 and 1, found: {unique}")
+            raise ValueError(f"Expected binary mask with classes 0 and 1, found: {unique} in mask {mask_path}")
         return image, mask
