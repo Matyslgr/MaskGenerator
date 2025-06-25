@@ -115,9 +115,6 @@ def main():
     # ==== PARAMETERS ====
     POSSIBLES_AUGMENTATIONS = ["geometry", "dropout", "color_invariance", "color_variation", "blur", "noise", "weather"]
 
-    augmentations = [
-        POSSIBLES_AUGMENTATIONS
-    ]
 
     model_args = [
         {
@@ -186,11 +183,11 @@ def main():
         [
             {
             "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-            "augmentations": augmentations,
+            "augmentations": POSSIBLES_AUGMENTATIONS,
             },
             {
                 "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                "augmentations": augmentations,
+                "augmentations": POSSIBLES_AUGMENTATIONS,
             }
         ]
     ]
