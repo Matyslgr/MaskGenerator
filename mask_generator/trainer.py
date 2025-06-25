@@ -24,12 +24,14 @@ import matplotlib.pyplot as plt
 
 from mask_generator.earlystopping import EarlyStopping
 from mask_generator.dataset import ImageMaskDataset
-from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 from mask_generator.utils import Timer
 from mask_generator.config import Config, LossConfig
 import mask_generator.settings as settings
 from mask_generator.experiment_tracker import ExperimentTracker
 from mask_generator.metrics import Metrics
+from mask_generator.logger import setup_logging
+
+logger = setup_logging(__file__, level=settings.logging_level, log_file=os.path.join(settings.run_dir, settings.logging_filename))
 
 def compute_pos_weight(loader, device: str = 'cpu') -> torch.Tensor:
     total_pos = 0
@@ -212,11 +214,15 @@ class Trainer():
     def fit(self, model: nn.Module, train_ds: ImageMaskDataset, val_ds: ImageMaskDataset, test_ds: ImageMaskDataset) -> Optional[nn.Module]:
         model = model.to(self.device)
 
+        logger.info(f"Model {model.__class__.__name__} initialized with {sum(p.numel() for p in model.parameters() if p.requires_grad)} trainable parameters.")
+
         train_loader, val_loader, test_loader = self._prepare_loaders(
             train_ds=train_ds,
             val_ds=val_ds,
             test_ds=test_ds
         )
+
+        logger.info(f"Train loader: {len(train_loader)} batches, Val loader: {len(val_loader)} batches, Test loader: {len(test_loader)} batches")
 
         criterion = self.build_loss(self.config.training.loss, train_loader)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.config.training.lr)

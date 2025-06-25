@@ -6,6 +6,7 @@
 ##
 
 import os
+import logging
 
 # Directories
 # root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -26,3 +27,4 @@ logging_filename = "experiment.log"
 
 # Other
 logger_name = "MaskGenerator"
+logging_level = logging.DEBUG
