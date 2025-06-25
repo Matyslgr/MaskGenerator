@@ -270,7 +270,6 @@ def main():
         "patience": [30],
         "delta": [0.0],
         "train_image_size": [[256, 256]],
-        "augmentations": augmentations,
         "use_amp": [False],
         "qat": qat_args,
         "loss": loss_args,
