@@ -102,7 +102,7 @@ from sklearn.model_selection import train_test_split
 from mask_generator.transforms import AlbumentationsTrainTransform, KorniaInferTransform
 from mask_generator.logger import setup_logging
 
-logger = setup_logging(__file__, level=logging.DEBUG)
+logger = setup_logging(__name__, level=logging.DEBUG)
 
 def load_datasets(config: Config, pad_divisor: int) -> Tuple[ImageMaskDataset, ImageMaskDataset, ImageMaskDataset]:
 
