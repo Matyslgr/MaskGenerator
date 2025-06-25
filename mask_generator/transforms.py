@@ -59,6 +59,7 @@ class AlbumentationsTrainTransform(BaseTransform):
 
     def __call__(self, image: np.ndarray, mask: np.ndarray = None):
         compose = [
+            ResizeWithAspectRatio(height=self.image_size[0], p=1.0),
             A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=self.pad_divisor, pad_width_divisor=self.pad_divisor),
             A.RandomCrop(height=self.image_size[0], width=self.image_size[1]),
             *self.augmentation_factory.build(self.augmentations),
