@@ -56,7 +56,7 @@ def main():
 
     assert isinstance(config, Config), "Configuration must be an instance of Config class."
 
-    logger = setup_logging(settings.logger_name, level=logging.level.DEBUG, log_file=os.path.join(config.other.run_dir, settings.logging_filename))
+    logger = setup_logging(settings.logger_name, level=logging.DEBUG, log_file=os.path.join(config.other.run_dir, settings.logging_filename))
 
     set_deterministic_behavior(config.training.seed)
 
