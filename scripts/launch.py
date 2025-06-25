@@ -126,57 +126,73 @@ def main():
             }
         },
         {
-            "arch": "unet",
+            "arch": "my_unet",
             "model_args": {
-                "encoder_name": "mobilenet_v2",
-                "encoder_weights": "imagenet",
-                "activation": None
+                "n_convs": 2,
+                "filters": [32, 64, 128],
+                "dropout": 0.0
             }
         },
         {
-            "arch": "unet",
+            "arch": "my_unet",
             "model_args": {
-                "encoder_name": "mobilenet_v2",
-                "encoder_weights": "imagenet",
-                "decoder_attention_type": "scse",
-                "activation": None
-            }
-        },
-        {
-            "arch": "unet",
-            "model_args": {
-                "encoder_name": "efficientnet-b0",
-                "encoder_weights": "imagenet",
-                "decoder_attention_type": "scse",
-                "activation": None
-            }
-        },
-        {
-            "arch": "fpn",
-            "model_args": {
-                "encoder_name": "mobilenet_v2",
-                "encoder_weights": "imagenet",
-                "decoder_attention_type": "scse",
-                "activation": None
-            }
-        },
-        {
-            "arch": "linknet",
-            "model_args": {
-                "encoder_name": "resnet18",
-                "encoder_weights": "imagenet",
-                "decoder_attention_type": "scse",
-                "activation": None
-            }
-        },
-        {
-            "arch": "deep_lab_v3",
-            "model_args": {
-                "encoder_name": "mobilenet_v2",
-                "encoder_weights": "imagenet",
-                "activation": None
+                "n_convs": 2,
+                "filters": [32, 64, 128, 256, 512],
+                "dropout": 0.0
             }
         }
+        # {
+        #     "arch": "unet",
+        #     "model_args": {
+        #         "encoder_name": "mobilenet_v2",
+        #         "encoder_weights": "imagenet",
+        #         "activation": None
+        #     }
+        # },
+        # {
+        #     "arch": "unet",
+        #     "model_args": {
+        #         "encoder_name": "mobilenet_v2",
+        #         "encoder_weights": "imagenet",
+        #         "decoder_attention_type": "scse",
+        #         "activation": None
+        #     }
+        # },
+        # {
+        #     "arch": "unet",
+        #     "model_args": {
+        #         "encoder_name": "efficientnet-b0",
+        #         "encoder_weights": "imagenet",
+        #         "decoder_attention_type": "scse",
+        #         "activation": None
+        #     }
+        # },
+        # {
+        #     "arch": "fpn",
+        #     "model_args": {
+        #         "encoder_name": "mobilenet_v2",
+        #         "encoder_weights": "imagenet",
+        #         "decoder_attention_type": "scse",
+        #         "activation": None
+        #     }
+        # },
+        # {
+        #     "arch": "linknet",
+        #     "model_args": {
+        #         "encoder_name": "resnet18",
+        #         "encoder_weights": "imagenet",
+        #         "decoder_attention_type": "scse",
+        #         "activation": None
+        #     }
+        # },
+        # {
+        #     "arch": "deep_lab_v3",
+        #     "model_args": {
+        #         "encoder_name": "mobilenet_v2",
+        #         "encoder_weights": "imagenet",
+        #         "activation": None
+        #     }
+        # }
     ]
 
     train_dataset = [
@@ -188,6 +204,16 @@ def main():
             {
                 "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
                 "augmentations": POSSIBLES_AUGMENTATIONS,
+            }
+        ],
+        [
+            {
+                "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
+                "augmentations": POSSIBLES_AUGMENTATIONS,
+            },
+            {
+                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
+                "augmentations": [],
             }
         ]
     ]
@@ -221,22 +247,22 @@ def main():
                 }
             }
         ],
-        # [
-        #     {
-        #         "name": "bce",
-        #         "weight": 0.3,
-        #         "params": {
-        #             "pos_weight": True
-        #         }
-        #     },
-        #     {
-        #         "name": "dice",
-        #         "weight": 0.7,
-        #         "params": {
-        #             "smooth": 1.0
-        #         }
-        #     }
-        # ],
+        [
+            {
+                "name": "bce",
+                "weight": 0.3,
+                "params": {
+                    "pos_weight": True
+                }
+            },
+            {
+                "name": "dice",
+                "weight": 0.7,
+                "params": {
+                    "smooth": 1.0
+                }
+            }
+        ],
         # [
         #     {
         #         "name": "bce",
