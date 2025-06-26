@@ -204,21 +204,6 @@ def custom_search() -> list[dict]:
                     },
                     {
                         "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                        "augmentations": [],
-                    }
-                ]
-            }
-        },
-
-        {
-            "training": {
-                "train_dataset": [
-                    {
-                        "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-                        "augmentations": POSSIBLES_AUGMENTATIONS,
-                    },
-                    {
-                        "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
                         "augmentations": POSSIBLES_AUGMENTATIONS,
                     },
                     {
@@ -227,7 +212,108 @@ def custom_search() -> list[dict]:
                     }
                 ]
             }
-        }
+        },
+
+        {
+            "model": {
+                "arch": "my_unet",
+                "model_args": {
+                    "n_convs": 2,
+                    "filters": [32, 64, 128],
+                    "dropout": 0.0
+                }
+            }
+        },
+
+        {
+            "model": {
+                "arch": "my_unet",
+                "model_args": {
+                    "n_convs": 2,
+                    "filters": [64, 128, 256],
+                    "dropout": 0.0
+                }
+            }
+        },
+
+        {
+            "model": {
+                "arch": "my_unet",
+                "model_args": {
+                    "n_convs": 3,
+                    "filters": [32, 64, 128],
+                    "dropout": 0.0
+                }
+            }
+        },
+
+        {
+            "training": {
+                "loss": [
+                    {
+                        "name": "dice",
+                        "weight": 1,
+                        "params": {
+                            "smooth": 1.0
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            "training": {
+                "loss": [
+                    {
+                        "name": "dice",
+                        "weight": 0.7,
+                        "params": {
+                            "smooth": 1.0
+                        }
+                    },
+                    {
+                        "name": "focal",
+                        "weight": 0.3,
+                        "params": {
+                            "alpha": 0.25,
+                            "gamma": 2.0,
+                            "reduction": 'mean'
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            "training": {
+                "loss": [
+                    {
+                        "name": "bce",
+                        "weight": 0.2,
+                        "params": {
+                            "pos_weight": True
+                        }
+                    },
+                    {
+                        "name": "dice",
+                        "weight": 0.5,
+                        "params": {
+                            "smooth": 1.0
+                        }
+                    },
+                    {
+                        "name": "focal",
+                        "weight": 0.3,
+                        "params": {
+                            "alpha": 0.25,
+                            "gamma": 2.0,
+                            "reduction": 'mean'
+                        }
+                    },
+                ]
+            }
+        },
+
     ]
 
     all_run_configs = [merge_dicts(base_config, override) for override in overrides_list]

@@ -19,7 +19,7 @@ import mask_generator.settings as settings
 from mask_generator.logger import setup_logging
 from mask_generator.models.utils import create_model
 from mask_generator.quantization_utils import prepare_qat_model, convert_qat_to_quantized, export_to_onnx
-from mask_generator.utils import set_deterministic_behavior, load_datasets
+from mask_generator.utils import set_deterministic_behavior, load_datasets, load_config_from_yaml
 from mask_generator.logger import setup_logging
 
 logger = setup_logging(__name__, level=logging.DEBUG)
@@ -40,19 +40,7 @@ def save_metadata(run_dir: str, pad_divisor: int):
 def main():
     args = parse_args()
 
-    try:
-        run_cfg = OmegaConf.load(args.config)
-
-        default_cfg = OmegaConf.structured(Config)
-
-        cfg = OmegaConf.merge(default_cfg, run_cfg)
-        OmegaConf.resolve(cfg)
-
-        config: Config = OmegaConf.to_object(cfg)
-
-    except Exception as e:
-        logger.error(f"Failed to load configuration: {e}")
-        return
+    config = load_config_from_yaml(args.config)
 
     assert isinstance(config, Config), "Configuration must be an instance of Config class."
 

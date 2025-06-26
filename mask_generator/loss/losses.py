@@ -8,6 +8,7 @@
 import torch
 import torch.nn as nn
 from typing import List, Tuple, Dict
+import torch.nn.functional as F
 
 class DiceLoss(nn.Module):
     def __init__(self, smooth=1.0):
@@ -30,6 +31,50 @@ class DiceLoss(nn.Module):
         intersection = (inputs * targets).sum()
         dice_score = (2. * intersection + self.smooth) / (inputs.sum() + targets.sum() + self.smooth)
         return 1 - dice_score
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0, reduction='mean'):
+        """
+        Focal Loss adapted for binary classification tasks.
+
+        Args:
+            alpha (float): Weighting factor for the class imbalance.
+            gamma (float): Focusing parameter to reduce the relative loss for well-classified examples.
+            reduction (str): Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+        """
+        super(FocalLoss, self).__init__()
+
+        self.alpha = alpha
+        self.gamma = gamma
+        if reduction not in ['none', 'mean', 'sum']:
+            raise ValueError(f"Invalid reduction mode: {reduction}. Choose from 'none', 'mean', or 'sum'.")
+        self.reduction = reduction
+
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the Focal loss between the predicted inputs and the target masks.
+        Args:
+            inputs (torch.Tensor): Predicted masks, shape (N, C, H, W).
+            targets (torch.Tensor): Ground truth masks, shape (N, C, H, W).
+        Returns:
+            torch.Tensor: Computed Focal loss.
+        """
+        bce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
+        probs = torch.sigmoid(inputs)
+
+        # Compte pt: probabilities of the positive class
+        pt = probs * targets + (1 - probs) * (1 - targets)
+
+        # Apply the Focal Loss formula
+        focal_term = (1 - pt) ** self.gamma
+        focal_loss = self.alpha * focal_term * bce_loss
+
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:  # 'none'
+            return focal_loss
 
 class CompositeLoss(nn.Module):
     def __init__(self, losses_with_weights: List[Tuple[str, nn.Module, float]]):

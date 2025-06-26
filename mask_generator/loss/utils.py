@@ -5,12 +5,10 @@
 ## utils
 ##
 
-import torch
 import torch.nn as nn
-from typing import List
 
 from mask_generator.config import LossConfig
-from mask_generator.loss.losses import DiceLoss, CompositeLoss
+from mask_generator.loss.losses import DiceLoss, FocalLoss
 
 class LossFactory:
     """
@@ -20,6 +18,7 @@ class LossFactory:
     _registry = {
         "bce": nn.BCEWithLogitsLoss,
         "dice": DiceLoss,
+        "focal": FocalLoss,
     }
 
     @staticmethod
