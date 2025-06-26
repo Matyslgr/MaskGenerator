@@ -90,11 +90,11 @@ def convert_qat_to_quantized(model: torch.fx.GraphModule) -> torch.fx.GraphModul
 
     return quantized_model
 
-def export_to_onnx(model: torch.fx.GraphModule, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
+def export_to_onnx(model: torch.nn.Module, onnx_path: str, input_shape: tuple = (1, 3, 256, 256)):
     """
     Exports the model to ONNX format.
     Args:
-        model (torch.fx.GraphModule): The model to export.
+        model (torch.nn.Module): The model to export.
         onnx_path (str): The path where the ONNX model will be saved.
         input_shape (tuple): The shape of the input tensor. Default is (1, 3, 256, 256).
     """
