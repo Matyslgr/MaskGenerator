@@ -146,7 +146,7 @@ def custom_search() -> list[dict]:
                 "smooth": 1.0
             }
         }
-    ],
+    ]
         # [
         #     {
         #         "name": "bce",
