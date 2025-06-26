@@ -10,10 +10,18 @@ fi
 
 # Arguments
 RUN_ID=$1
+SEARCH_MODE=$2  # "grid" ou "custom"
 
 if [ -z "$RUN_ID" ]; then
-  echo "Usage: $0 launch <run_id>"
+  echo "Usage: $0 <run_id> [search_mode]"
+  echo "Example: $0 001 grid"
   exit 1
+fi
+
+# Default search mode to 'grid' if not provided
+if [ -z "$SEARCH_MODE" ]; then
+  echo "No search mode provided. Defaulting to 'grid'."
+  SEARCH_MODE="grid"
 fi
 
 # Constants
@@ -26,14 +34,14 @@ SESSION="train_${RUN_ID}"
 
 mkdir -p "$WORKTREES_DIR"
 
-echo "[INFO] Launching training run $RUN_ID on $BRANCH branch"
+echo "Launching training run $RUN_ID on $BRANCH branch"
 
 cd "$BASE_DIR"
 git fetch origin
 git pull origin $BRANCH
 
 if [ -d "$WORKTREE" ]; then
-  echo "[INFO] Worktree $WORKTREE already exists. Deleting."
+  echo "Worktree $WORKTREE already exists. Deleting."
   git worktree remove --force "$WORKTREE"
 fi
 
@@ -41,13 +49,13 @@ git worktree add --detach "$WORKTREE" origin/$BRANCH
 
 COMMIT_SHA=$(git -C "$WORKTREE" rev-parse HEAD)
 
-echo "[INFO] Using commit: $COMMIT_SHA"
+echo "Using commit: $COMMIT_SHA"
 
 CMD="
 cd $WORKTREE && \
 source /root/anaconda3/etc/profile.d/conda.sh && \
 conda activate Robocar && \
-PYTHONPATH=. python $SCRIPT_PATH; \
+PYTHONPATH=. python $SCRIPT_PATH --search $SEARCH_MODE; \
 exec bash
 "
 
