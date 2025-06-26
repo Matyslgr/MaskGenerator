@@ -299,6 +299,7 @@ class KorniaInferTransform(BaseTransform):
                 y_start, y_end = crop_coords
                 mask = mask[y_start:y_end, :]
             mask_tensor = torch.from_numpy(mask).unsqueeze(0).float().to(self.device) # [H, W] -> [1, H, W]
+            mask_tensor = self._resize(mask_tensor)
             mask_tensor = self._pad_if_needed(mask_tensor)
             return img_tensor, mask_tensor
         return img_tensor
