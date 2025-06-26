@@ -9,10 +9,10 @@ import os
 import subprocess
 import hashlib
 import time
+import argparse
 import json
 import logging
 from omegaconf import OmegaConf
-import itertools
 import shutil
 from datetime import timedelta
 from git import Repo
@@ -21,6 +21,8 @@ from pathlib import Path
 from mask_generator.config import Config
 import mask_generator.settings as settings
 from mask_generator.logger import setup_logging
+from scripts.grid_search import grid_search
+from scripts.custom_search import custom_search
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -60,24 +62,6 @@ def make_hash(*dicts: dict) -> str:
     s = json.dumps(combined, sort_keys=True).encode()
     return hashlib.md5(s).hexdigest()[:10]
 
-def dict_product(d: dict):
-    """Generate all combinations of dictionary values."""
-    keys, values = zip(*d.items())
-    for combo in itertools.product(*values):
-        yield dict(zip(keys, combo))
-
-def recursive_product(d: dict):
-    groups = d.keys()
-    groups_product = {}
-    for g in groups:
-        if isinstance(d[g], list) and all(isinstance(item, dict) for item in d[g]):
-            groups_product[g] = d[g]
-        else:
-            groups_product[g] = list(dict_product(d[g]))
-
-    for combined in itertools.product(*groups_product.values()):
-        yield dict(zip(groups, combined))
-
 def run_already_exists(run_hash: str) -> bool:
     """Check if a run with the given hash already exists and is fully completed."""
     if not os.path.exists(settings.experiment_dir):
@@ -110,223 +94,28 @@ def format_run_dir(run_hash: str) -> str:
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     return f"{timestamp}_{run_hash}"
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Launch training experiments with various configurations.")
+    parser.add_argument("--search", choices=["grid", "custom"], default="grid",
+                        help="Type of search to perform: 'grid' for grid search, 'custom' for custom search.")
+
+    return parser.parse_args()
+
 def main():
 
-    # ==== PARAMETERS ====
-    POSSIBLES_AUGMENTATIONS = ["geometry", "dropout", "color_invariance", "color_variation", "blur", "noise", "weather"]
+    args = parse_args()
 
+    if args.search == "grid":
+        logger.info("Performing grid search...")
+        all_run_configs = grid_search()
+    elif args.search == "custom":
+        logger.info("Performing custom search...")
+        all_run_configs = custom_search()
+    else:
+        logger.error(f"Unknown search type: {args.search}. Please choose 'grid' or 'custom'.")
+        exit(1)
 
-    model_args = [
-        {
-            "arch": "my_unet",
-            "model_args": {
-                "n_convs": 2,
-                "filters": [32, 64, 128, 256],
-                "dropout": 0.0
-            }
-        },
-        {
-            "arch": "my_unet",
-            "model_args": {
-                "n_convs": 2,
-                "filters": [32, 64, 128],
-                "dropout": 0.0
-            }
-        },
-        # {
-        #     "arch": "my_unet",
-        #     "model_args": {
-        #         "n_convs": 2,
-        #         "filters": [32, 64, 128, 256, 512],
-        #         "dropout": 0.0
-        #     }
-        # }
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "efficientnet-b0",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "fpn",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "linknet",
-        #     "model_args": {
-        #         "encoder_name": "resnet18",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "deep_lab_v3",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "activation": None
-        #     }
-        # }
-    ]
-
-    train_dataset = [
-        [
-            {
-            "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-            "augmentations": POSSIBLES_AUGMENTATIONS,
-            },
-            {
-                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                "augmentations": POSSIBLES_AUGMENTATIONS,
-            }
-        ],
-        [
-            {
-                "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-                "augmentations": POSSIBLES_AUGMENTATIONS,
-            },
-            {
-                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                "augmentations": [],
-            }
-        ],
-        [
-            {
-                "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-                "augmentations": POSSIBLES_AUGMENTATIONS,
-            },
-            {
-                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                "augmentations": POSSIBLES_AUGMENTATIONS,
-            },
-            {
-                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_train_source.csv"),
-                "augmentations": POSSIBLES_AUGMENTATIONS,
-            }
-        ]
-    ]
-
-    eval_dataset = [
-        [
-            {
-                "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_test.csv"),
-            }
-        ]
-    ]
-
-    qat_args = [
-        {"enabled": False}
-    ]
-
-    loss_args = [
-        [
-            {
-                "name": "bce",
-                "weight": 0.5,
-                "params": {
-                    "pos_weight": True
-                }
-            },
-            {
-                "name": "dice",
-                "weight": 0.5,
-                "params": {
-                    "smooth": 1.0
-                }
-            }
-        ],
-        [
-            {
-                "name": "bce",
-                "weight": 0.3,
-                "params": {
-                    "pos_weight": True
-                }
-            },
-            {
-                "name": "dice",
-                "weight": 0.7,
-                "params": {
-                    "smooth": 1.0
-                }
-            }
-        ],
-        # [
-        #     {
-        #         "name": "bce",
-        #         "weight": 0.15,
-        #         "params": {
-        #             "pos_weight": True
-        #         }
-        #     },
-        #     {
-        #         "name": "dice",
-        #         "weight": 0.85,
-        #         "params": {
-        #             "smooth": 1.0
-        #         }
-        #     }
-        # ],
-    ]
-
-    training_args = {
-        "train_dataset": train_dataset,
-        "eval_dataset": eval_dataset,
-        "seed": [i + 42 for i in range(1)],
-        "batch_size": [32],
-        "num_epochs": [100],
-        "lr": [0.001],
-        "step_size": [10],
-        "gamma": [0.1],
-        "patience": [30],
-        "delta": [0.0],
-        "train_image_size": [[256, 256]],
-        "use_amp": [False],
-        "qat": qat_args,
-        "loss": loss_args,
-    }
-
-    other_args = {
-        "verbose": [False],
-    }
-
-    config = {
-        "model": model_args,
-        "training": training_args,
-        "other": other_args,
-    }
-
-    # ==== END PARAMETERS ====
-
-    all_run_configs = list(recursive_product(config))
     total_runs = len(all_run_configs)
-
     logger.info(f"Total configurations to run: {total_runs}")
 
     completed_runs = 0

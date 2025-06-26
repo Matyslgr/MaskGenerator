@@ -115,10 +115,6 @@ def export_to_onnx(model: torch.nn.Module, onnx_path: str, input_shape: tuple = 
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
-        dynamic_axes={
-            "input": {0: "batch_size", 2: "height", 3: "width"},
-            "output": {0: "batch_size", 2: "height", 3: "width"}
-        },
         training=torch.onnx.TrainingMode.EVAL,
     )
     logger.info(f"Exporting model to ONNX format at {onnx_path} with input shape {input_shape}")

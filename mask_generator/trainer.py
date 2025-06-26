@@ -19,8 +19,6 @@ from typing import Tuple, Optional
 from typing import List
 from mask_generator.loss import LossFactory, CompositeLoss
 import torch.nn as nn
-import matplotlib.pyplot as plt
-
 
 from mask_generator.earlystopping import EarlyStopping
 from mask_generator.dataset import ImageMaskDataset
@@ -41,7 +39,7 @@ def compute_pos_weight(loader, device: str = 'cpu') -> torch.Tensor:
         total_pos += masks.sum().item()
         total_neg += (1 - masks).sum().item()
 
-    print(f"Total positive pixels: {total_pos}, Total negative pixels: {total_neg}")
+    logger.debug(f"Total positive pixels: {total_pos}, Total negative pixels: {total_neg}")
     return torch.tensor(total_neg / total_pos).to(device)
 
 class Trainer():

@@ -130,7 +130,7 @@ def load_datasets(config: Config, pad_divisor: int) -> Tuple[ImageMaskDataset, I
         logger.info(f"Loading {len(pairs_path)} pairs from train CSV '{cfg.csv}'.")
 
         train_transform = AlbumentationsTrainTransform(
-            image_size=config.training.train_image_size,
+            image_size=config.training.image_size,
             pad_divisor=pad_divisor,
             augmentations=cfg.augmentations
         )
@@ -166,7 +166,7 @@ def load_datasets(config: Config, pad_divisor: int) -> Tuple[ImageMaskDataset, I
 
     val_pairs, test_pairs = train_test_split(all_eval_pairs, test_size=0.8, random_state=config.training.seed, shuffle=True)
 
-    eval_transform = KorniaInferTransform(pad_divisor=pad_divisor)
+    eval_transform = KorniaInferTransform(pad_divisor=pad_divisor, image_size=config.training.image_size)
     val_dataset = ImageMaskDataset(val_pairs, transform=eval_transform)
     test_dataset = ImageMaskDataset(test_pairs, transform=eval_transform)
 

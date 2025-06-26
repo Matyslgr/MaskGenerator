@@ -82,7 +82,7 @@ def main():
     if config.training.qat.enabled:
         model = convert_qat_to_quantized(model)
 
-    input_shape = (1, 3, config.training.train_image_size[0], config.training.train_image_size[1])
+    input_shape = (1, 3, config.training.image_size[0], config.training.image_size[1])
     export_to_onnx(model, os.path.join(config.other.run_dir, settings.onnx_filename), input_shape=input_shape)
 
 if __name__ == "__main__":

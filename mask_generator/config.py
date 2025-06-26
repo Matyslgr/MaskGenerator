@@ -46,7 +46,7 @@ class TrainingConfig:
     gamma: float = 0.1
     patience: int = 30
     delta: float = 0.0
-    train_image_size: Tuple[int, int] = (256, 256)
+    image_size: Tuple[int, int] = (128, 384)
     use_amp: bool = False
     qat: QATConfig = field(default_factory=QATConfig)
     loss: List[LossConfig] = field(default_factory=lambda: [LossConfig()])

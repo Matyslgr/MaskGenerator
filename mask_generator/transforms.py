@@ -170,7 +170,7 @@ class AdaptiveCropToAspectRatio(DualTransform):
         return ("target_ratio", "crop_strategy", "debug")
 
 class AlbumentationsTrainTransform(BaseTransform):
-    def __init__(self, pad_divisor: int, image_size: tuple[int, int], augmentations = None):
+    def __init__(self, pad_divisor: int, image_size: tuple[int, int], augmentations = None, debug: bool = False):
         self.pad_divisor = pad_divisor
         self.image_size = image_size
         self.target_ratio = image_size[1] / image_size[0]  # width / height
@@ -186,7 +186,7 @@ class AlbumentationsTrainTransform(BaseTransform):
         logger.debug(f"Using augmentations: {self.augmentations}")
 
         compose = [
-            AdaptiveCropToAspectRatio(target_ratio=self.target_ratio, crop_strategy="adaptive", debug=True),
+            AdaptiveCropToAspectRatio(target_ratio=self.target_ratio, crop_strategy="adaptive", debug=debug),
             A.Resize(height=self.image_size[0], width=self.image_size[1]),
             A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=self.pad_divisor, pad_width_divisor=self.pad_divisor),
             # *self.augmentation_factory.build(self.augmentations),
@@ -226,10 +226,10 @@ class AlbumentationsTrainTransform(BaseTransform):
         return res['image'], res['mask'].unsqueeze(0).float()
 
 class KorniaInferTransform(BaseTransform):
-    def __init__(self, pad_divisor: int, image_size: tuple[int, int], device: str = 'cpu'):
+    def __init__(self, pad_divisor: int, image_size: tuple[int, int], device: str = 'cpu', debug: bool = False):
         self.pad_divisor = pad_divisor
         self.image_size = image_size
-        self.target_ratio = image_size[1] / image_size[0]
+        self.target_ratio = image_size[1] / image_size[0] # width / height
         self.device = device
 
         self.mean = torch.tensor([0.485, 0.456, 0.406], device=self.device).view(3, 1, 1)
@@ -280,7 +280,6 @@ class KorniaInferTransform(BaseTransform):
         assert image.ndim == 3 and image.shape[2] == 3, "Image must be [H, W, C] with 3 channels"
 
         crop_coords = self.cropper.compute_crop(image, mask)
-        print(f"Crop coordinates: {crop_coords}")
         if crop_coords is not None:
             y_start, y_end = crop_coords
             image = image[y_start:y_end, :, :]
