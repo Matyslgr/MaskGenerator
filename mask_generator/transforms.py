@@ -246,16 +246,16 @@ class KorniaInferTransform(BaseTransform):
     #     img = kt.resize(img, (self.target_height, new_w), interpolation=interpolation)
     #     return img
 
-    def _resize(self, img: torch.Tensor) -> torch.Tensor:
+    def _resize(self, img: torch.Tensor, interpolation: str = "bilinear") -> torch.Tensor:
         """Resize the image tensor to the target size."""
-        _, h, w = img.shape
+        if interpolation not in ['bilinear', 'nearest']:
+            raise ValueError("Interpolation must be either 'bilinear' or 'nearest'.")
 
-        # if abs(aspect_ratio - self.target_ratio) > 0.01:
-        #     logger.warning(f"Aspect ratio mismatch: {aspect_ratio} != {self.target_ratio}. Resizing to {(h, w)} to {self.image_size}.")
+        _, h, w = img.shape
 
         target_height, target_width = self.image_size
         if h != target_height or w != target_width:
-            img = kt.resize(img, (target_height, target_width), interpolation='bilinear')
+            img = kt.resize(img, (target_height, target_width), interpolation=interpolation)
         return img
 
     def _pad_if_needed(self, img: torch.Tensor) -> torch.Tensor:
@@ -299,7 +299,7 @@ class KorniaInferTransform(BaseTransform):
                 y_start, y_end = crop_coords
                 mask = mask[y_start:y_end, :]
             mask_tensor = torch.from_numpy(mask).unsqueeze(0).float().to(self.device) # [H, W] -> [1, H, W]
-            mask_tensor = self._resize(mask_tensor)
+            mask_tensor = self._resize(mask_tensor, interpolation='nearest')
             mask_tensor = self._pad_if_needed(mask_tensor)
             return img_tensor, mask_tensor
         return img_tensor
