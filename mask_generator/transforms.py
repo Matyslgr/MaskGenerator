@@ -189,7 +189,7 @@ class AlbumentationsTrainTransform(BaseTransform):
             AdaptiveCropToAspectRatio(target_ratio=self.target_ratio, crop_strategy="adaptive", debug=debug),
             A.Resize(height=self.image_size[0], width=self.image_size[1]),
             A.PadIfNeeded(min_height=None, min_width=None, pad_height_divisor=self.pad_divisor, pad_width_divisor=self.pad_divisor),
-            # *self.augmentation_factory.build(self.augmentations),
+            *self.augmentation_factory.build(self.augmentations),
             A.Normalize(mean=self.mean_list,
                         std=self.std_list,
                         max_pixel_value=self.max_pixel_value),
@@ -235,7 +235,7 @@ class KorniaInferTransform(BaseTransform):
         self.mean = torch.tensor([0.485, 0.456, 0.406], device=self.device).view(3, 1, 1)
         self.std = torch.tensor([0.229, 0.224, 0.225], device=self.device).view(3, 1, 1)
         self.max_pixel_value = 255.0
-        self.cropper = AspectAwareCropper(target_ratio=self.target_ratio, crop_strategy="adaptive", debug=True)
+        self.cropper = AspectAwareCropper(target_ratio=self.target_ratio, crop_strategy="adaptive", debug=debug)
 
     # def _resize_with_aspect_ratio(self, img: torch.Tensor, interpolation: str = 'bilinear') -> torch.Tensor:
     #     if interpolation not in ['bilinear', 'nearest']:
