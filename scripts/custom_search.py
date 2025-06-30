@@ -43,74 +43,74 @@ def custom_search() -> list[dict]:
             "dropout": 0.0
         }
     }
-        # {
-        #     "arch": "my_unet",
-        #     "model_args": {
-        #         "n_convs": 2,
-        #         "filters": [32, 64, 128],
-        #         "dropout": 0.0
-        #     }
-        # },
-        # {
-        #     "arch": "my_unet",
-        #     "model_args": {
-        #         "n_convs": 2,
-        #         "filters": [32, 64, 128, 256, 512],
-        #         "dropout": 0.0
-        #     }
-        # }
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "unet",
-        #     "model_args": {
-        #         "encoder_name": "efficientnet-b0",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "fpn",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "linknet",
-        #     "model_args": {
-        #         "encoder_name": "resnet18",
-        #         "encoder_weights": "imagenet",
-        #         "decoder_attention_type": "scse",
-        #         "activation": None
-        #     }
-        # },
-        # {
-        #     "arch": "deep_lab_v3",
-        #     "model_args": {
-        #         "encoder_name": "mobilenet_v2",
-        #         "encoder_weights": "imagenet",
-        #         "activation": None
-        #     }
-        # }
+    # {
+    #     "arch": "my_unet",
+    #     "model_args": {
+    #         "n_convs": 2,
+    #         "filters": [32, 64, 128],
+    #         "dropout": 0.0
+    #     }
+    # },
+    # {
+    #     "arch": "my_unet",
+    #     "model_args": {
+    #         "n_convs": 2,
+    #         "filters": [32, 64, 128, 256, 512],
+    #         "dropout": 0.0
+    #     }
+    # }
+    # {
+    #     "arch": "unet",
+    #     "model_args": {
+    #         "encoder_name": "mobilenet_v2",
+    #         "encoder_weights": "imagenet",
+    #         "activation": None
+    #     }
+    # },
+    # {
+    #     "arch": "unet",
+    #     "model_args": {
+    #         "encoder_name": "mobilenet_v2",
+    #         "encoder_weights": "imagenet",
+    #         "decoder_attention_type": "scse",
+    #         "activation": None
+    #     }
+    # },
+    # {
+    #     "arch": "unet",
+    #     "model_args": {
+    #         "encoder_name": "efficientnet-b0",
+    #         "encoder_weights": "imagenet",
+    #         "decoder_attention_type": "scse",
+    #         "activation": None
+    #     }
+    # },
+    # {
+    #     "arch": "fpn",
+    #     "model_args": {
+    #         "encoder_name": "mobilenet_v2",
+    #         "encoder_weights": "imagenet",
+    #         "decoder_attention_type": "scse",
+    #         "activation": None
+    #     }
+    # },
+    # {
+    #     "arch": "linknet",
+    #     "model_args": {
+    #         "encoder_name": "resnet18",
+    #         "encoder_weights": "imagenet",
+    #         "decoder_attention_type": "scse",
+    #         "activation": None
+    #     }
+    # },
+    # {
+    #     "arch": "deep_lab_v3",
+    #     "model_args": {
+    #         "encoder_name": "mobilenet_v2",
+    #         "encoder_weights": "imagenet",
+    #         "activation": None
+    #     }
+    # }
 
     train_dataset = [
         {
@@ -147,22 +147,22 @@ def custom_search() -> list[dict]:
             }
         }
     ]
-        # [
-        #     {
-        #         "name": "bce",
-        #         "weight": 0.5,
-        #         "params": {
-        #             "pos_weight": True
-        #         }
-        #     },
-        #     {
-        #         "name": "dice",
-        #         "weight": 0.5,
-        #         "params": {
-        #             "smooth": 1.0
-        #         }
-        #     }
-        # ],
+    # [
+    #     {
+    #         "name": "bce",
+    #         "weight": 0.5,
+    #         "params": {
+    #             "pos_weight": True
+    #         }
+    #     },
+    #     {
+    #         "name": "dice",
+    #         "weight": 0.5,
+    #         "params": {
+    #             "smooth": 1.0
+    #         }
+    #     }
+    # ],
 
     training_args = {
         "train_dataset": train_dataset,
