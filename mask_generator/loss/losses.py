@@ -189,7 +189,7 @@ def lovasz_grad(gt_sorted):
         jaccard[1:p] = jaccard[1:p] - jaccard[0:-1]
     return jaccard
 
-def flatten_binary_scores(self, scores, labels, ignore=None):
+def flatten_binary_scores(scores, labels, ignore=None):
     """
     Flattens predictions in the batch (binary case)
     Remove labels equal to 'ignore'
