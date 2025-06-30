@@ -262,7 +262,7 @@ def custom_search() -> list[dict]:
                     }
                 ]
             }
-        }
+        },
 
         {
             "training": {
