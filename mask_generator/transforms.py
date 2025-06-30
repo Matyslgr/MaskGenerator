@@ -279,12 +279,13 @@ class KorniaInferTransform(BaseTransform):
         assert isinstance(image, np.ndarray), "Image must be a numpy array."
         assert image.ndim == 3 and image.shape[2] == 3, "Image must be [H, W, C] with 3 channels"
 
-        crop_coords = self.cropper.compute_crop(image, mask)
-        if crop_coords is not None:
-            y_start, y_end = crop_coords
-            image = image[y_start:y_end, :, :]
-        elif self.cropper.debug and mask is not None:
-            self.cropper.debug_visual(mask, crop_coords)
+        aspect_ratio = image.shape[1] / image.shape[0]
+        crop_coords = None
+        if aspect_ratio != self.target_ratio:
+            crop_coords = self.cropper.compute_crop(image, mask)
+            if crop_coords is not None:
+                y_start, y_end = crop_coords
+                image = image[y_start:y_end, :, :]
 
         img_tensor = torch.from_numpy(image).to(self.device).permute(2, 0, 1).float() # [H, W, C] -> [C, H, W]
         img_tensor = self._resize(img_tensor)

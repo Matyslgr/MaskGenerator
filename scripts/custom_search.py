@@ -191,59 +191,18 @@ def custom_search() -> list[dict]:
         "other": other_args,
     }
 
-
     overrides_list = [
-        {}, # No overrides, use base config as is
-
         {
             "training": {
-                "train_dataset": [
+                "loss": [
                     {
-                        "csv": os.path.join(settings.dataset_dir, "simu_v0", "simu.csv"),
-                        "augmentations": POSSIBLES_AUGMENTATIONS,
-                    },
-                    {
-                        "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_target.csv"),
-                        "augmentations": POSSIBLES_AUGMENTATIONS,
-                    },
-                    {
-                        "csv": os.path.join(settings.dataset_dir, "CARLANE", "MoLane", "molane_val_source.csv"),
-                        "augmentations": POSSIBLES_AUGMENTATIONS,
+                        "name": "lovasz_hinge",
+                        "weight": 1,
+                        "params": {
+                            "per_image": True,
+                        }
                     }
                 ]
-            }
-        },
-
-        {
-            "model": {
-                "arch": "my_unet",
-                "model_args": {
-                    "n_convs": 2,
-                    "filters": [32, 64, 128],
-                    "dropout": 0.0
-                }
-            }
-        },
-
-        {
-            "model": {
-                "arch": "my_unet",
-                "model_args": {
-                    "n_convs": 2,
-                    "filters": [64, 128, 256],
-                    "dropout": 0.0
-                }
-            }
-        },
-
-        {
-            "model": {
-                "arch": "my_unet",
-                "model_args": {
-                    "n_convs": 3,
-                    "filters": [32, 64, 128],
-                    "dropout": 0.0
-                }
             }
         },
 
@@ -251,10 +210,32 @@ def custom_search() -> list[dict]:
             "training": {
                 "loss": [
                     {
-                        "name": "dice",
+                        "name": "lovasz_hinge",
                         "weight": 1,
                         "params": {
-                            "smooth": 1.0
+                            "per_image": False,
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            "training": {
+                "loss": [
+                    {
+                        "name": "lovasz_hinge",
+                        "weight": 0.7,
+                        "params": {
+                            "per_image": True,
+                        }
+                    },
+                    {
+                        "name": "boundary",
+                        "weight": 0.3,
+                        "params": {
+                            "theta0": 3,
+                            "theta": 5
                         }
                     }
                 ]
@@ -272,12 +253,32 @@ def custom_search() -> list[dict]:
                         }
                     },
                     {
-                        "name": "focal",
+                        "name": "boundary",
                         "weight": 0.3,
                         "params": {
-                            "alpha": 0.25,
-                            "gamma": 2.0,
-                            "reduction": 'mean'
+                            "theta0": 3,
+                            "theta": 5
+                        }
+                    }
+                ]
+            }
+        }
+
+        {
+            "training": {
+                "loss": [
+                    {
+                        "name": "lovasz_hinge",
+                        "weight": 0.6,
+                        "params": {
+                            "per_image": True,
+                        }
+                    },
+                    {
+                        "name": "dice",
+                        "weight": 0.4,
+                        "params": {
+                            "smooth": 1.0
                         }
                     }
                 ]
@@ -288,28 +289,25 @@ def custom_search() -> list[dict]:
             "training": {
                 "loss": [
                     {
-                        "name": "bce",
-                        "weight": 0.2,
-                        "params": {
-                            "pos_weight": True
-                        }
+                        "name": "lovasz_hinge",
+                        "weight": 0.5,
+                        "params": {}
                     },
                     {
                         "name": "dice",
-                        "weight": 0.5,
+                        "weight": 0.3,
                         "params": {
                             "smooth": 1.0
                         }
                     },
                     {
-                        "name": "focal",
-                        "weight": 0.3,
+                        "name": "boundary",
+                        "weight": 0.2,
                         "params": {
-                            "alpha": 0.25,
-                            "gamma": 2.0,
-                            "reduction": 'mean'
+                            "theta0": 3,
+                            "theta": 5
                         }
-                    },
+                    }
                 ]
             }
         },

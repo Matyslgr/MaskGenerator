@@ -8,7 +8,7 @@
 import torch.nn as nn
 
 from mask_generator.config import LossConfig
-from mask_generator.loss.losses import DiceLoss, FocalLoss
+from mask_generator.loss.losses import DiceLoss, FocalLoss, BoundaryLoss, LovaszHingeLoss
 
 class LossFactory:
     """
@@ -19,6 +19,8 @@ class LossFactory:
         "bce": nn.BCEWithLogitsLoss,
         "dice": DiceLoss,
         "focal": FocalLoss,
+        "boundary": BoundaryLoss,
+        "lovasz_hinge": LovaszHingeLoss,
     }
 
     @staticmethod
