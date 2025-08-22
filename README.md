@@ -97,3 +97,8 @@ Below are examples of input images and their corresponding predicted masks.
 ![Example 2](assets/mask_plot_4e096770-6e92-4eb8-a7ad-1494eb882802.png)
 
 ![Example 3](assets/mask_plot_902d047b-d941-4338-a1cb-952a4e250d62.png)
+
+## 🔗 Related repositories
+
+- ![RacingSimulator](https://github.com/MatysLgr/RacingSimulator): Decision AI
+- ![Robocar](https://github.com/AlexyanComino/Robocar): Main project
